@@ -84,22 +84,146 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 40px;
-      max-width: 520px;
+      padding: 32px;
+      max-width: 680px;
       width: 100%;
       box-shadow: var(--shadow-lg);
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .setup-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
-    .setup-box .sub { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
-    .setup-box ol { padding-left: 20px; line-height: 1.7; color: var(--text-muted); margin-bottom: 20px; font-size: 13px; }
-    .setup-box ol b { color: var(--text); }
+    .setup-box .sub { color: var(--text-muted); margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
+    .setup-box ol, .setup-box ul { padding-left: 20px; line-height: 1.7; color: var(--text-muted); font-size: 13px; }
+    .setup-box ol b, .setup-box ul b { color: var(--text); font-weight: 600; }
+    .setup-box ol li { margin-bottom: 3px; }
+    .setup-box ul li { margin-bottom: 2px; }
     .setup-box input {
       width: 100%;
-      margin-bottom: 12px;
       font-size: 13px;
       font-family: var(--font-mono);
     }
     .setup-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* Setup tabs */
+    .setup-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--surface-2);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+    }
+    .setup-tab {
+      flex: 1;
+      background: transparent; border: none; cursor: pointer;
+      font: inherit; font-size: 13px; font-weight: 500;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: calc(var(--radius-sm) - 2px);
+      transition: all .15s;
+    }
+    .setup-tab:hover { color: var(--text); }
+    .setup-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+    .setup-panel { display: none; }
+    .setup-panel.active { display: block; }
+
+    /* Guide sections */
+    .guide-section {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .guide-section:last-child { border-bottom: none; }
+    .guide-section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-num {
+      display: inline-grid;
+      place-items: center;
+      width: 22px; height: 22px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 11px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .guide-section code {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+    }
+    .guide-section kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 3px;
+      box-shadow: 0 1px 0 var(--border-strong);
+    }
+    .guide-section a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .guide-section a:hover { text-decoration: underline; }
+    .guide-tips {
+      background: var(--accent-soft);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-top: 16px;
+      border: none;
+    }
+    .guide-tips h3 { font-size: 13px; margin-bottom: 6px; }
+    .guide-tips ul { padding-left: 18px; font-size: 12px; }
+
+    /* Code copy area */
+    .code-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .code-actions .btn { font-size: 12px; padding: 6px 12px; }
+    .code-details {
+      flex: 1;
+      min-width: 120px;
+    }
+    .code-details summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 0;
+    }
+    .code-details summary:hover { color: var(--text); }
+    .code-preview {
+      margin-top: 8px;
+      max-height: 240px;
+      overflow: auto;
+      padding: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: pre;
+      color: var(--text-muted);
+    }
 
     /* Header */
     .header {
@@ -113,7 +237,7 @@
       .header { background: rgba(10,10,11,.85); }
     }
     .header-inner {
-      max-width: 1280px; margin: 0 auto;
+      max-width: 1080px; margin: 0 auto;
       padding: 14px 24px;
       display: flex; align-items: center; justify-content: space-between;
       gap: 24px; flex-wrap: wrap;
@@ -159,7 +283,7 @@
     .sync-dot.error { background: var(--danger); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 
-    .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .main { max-width: 1080px; margin: 0 auto; padding: 24px; }
     .loading-bar {
       position: fixed; top: 0; left: 0; right: 0; height: 2px;
       background: var(--accent); z-index: 100;
@@ -860,6 +984,679 @@
       .bulk-bar .bulk-left, .bulk-bar .bulk-right { justify-content: center; }
     }
   </style>
+  <!-- EMBEDDED_SCRIPTS -->
+  <script type="text/plain" id="embedded-code-gs">/**
+ * 텀블벅 후원 트래커 - Apps Script API 서버
+ * 
+ * 이 스크립트는 JSON API 역할만 합니다.
+ * 실제 UI는 GitHub Pages에 있는 index.html이 담당하고,
+ * 이 스크립트를 호출해서 시트에 데이터를 읽고 씁니다.
+ * 
+ * CORS 우회를 위해 JSONP 방식도 지원합니다 (callback 파라미터).
+ */
+
+const SHEET_NAME = &#x27;projects&#x27;;
+const CATEGORIES_SHEET = &#x27;categories&#x27;;
+
+const COLUMNS = [
+  &#x27;id&#x27;, &#x27;title&#x27;, &#x27;creator&#x27;, &#x27;amount&#x27;, &#x27;category&#x27;,
+  &#x27;status&#x27;, &#x27;paymentDate&#x27;, &#x27;deliveryDate&#x27;, &#x27;downloaded&#x27;, &#x27;downloadedAt&#x27;,
+  &#x27;sharedWith&#x27;, &#x27;reward&#x27;, &#x27;url&#x27;, &#x27;notes&#x27;, &#x27;createdAt&#x27;, &#x27;updatedAt&#x27;
+];
+
+// =========================================================
+// 메뉴 (시트에서 바로 실행)
+// =========================================================
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu(&#x27;텀블벅 트래커&#x27;)
+    .addItem(&#x27;시트 초기화&#x27;, &#x27;setupSheet&#x27;)
+    .addItem(&#x27;API URL 보기&#x27;, &#x27;showApiUrl&#x27;)
+    .addToUi();
+}
+
+function setupSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+    sheet.getRange(1, 1, 1, COLUMNS.length)
+      .setFontWeight(&#x27;bold&#x27;)
+      .setBackground(&#x27;#1f1a14&#x27;)
+      .setFontColor(&#x27;#fbf7ee&#x27;);
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 260);
+    sheet.setColumnWidth(2, 260);
+    sheet.setColumnWidth(3, 140);
+    sheet.setColumnWidth(4, 100);
+    sheet.setColumnWidth(5, 100);
+    sheet.setColumnWidth(6, 100);
+    sheet.setColumnWidth(7, 110);
+    sheet.setColumnWidth(8, 110);
+    sheet.setColumnWidth(9, 90);
+    sheet.setColumnWidth(10, 110);   // downloadedAt
+    sheet.setColumnWidth(11, 160);   // sharedWith
+    sheet.setColumnWidth(12, 220);   // reward
+    sheet.setColumnWidth(13, 220);   // url
+    sheet.setColumnWidth(14, 240);   // notes
+  }
+  try { SpreadsheetApp.getUi().alert(&#x27;시트 준비 완료!&#x27;); } catch (e) {}
+}
+
+/**
+ * 카테고리 시트 가져오기 (없으면 생성)
+ */
+function getCategoriesSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CATEGORIES_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(CATEGORIES_SHEET);
+    sheet.getRange(1, 1).setValue(&#x27;name&#x27;)
+      .setFontWeight(&#x27;bold&#x27;)
+      .setBackground(&#x27;#1f1a14&#x27;)
+      .setFontColor(&#x27;#fbf7ee&#x27;);
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 240);
+  }
+  return sheet;
+}
+
+function showApiUrl() {
+  const url = ScriptApp.getService().getUrl();
+  const msg = url
+    ? &#x27;API URL:\n\n&#x27; + url + &#x27;\n\n이 주소를 GitHub의 index.html에 붙여넣으세요.&#x27;
+    : &#x27;아직 배포되지 않았어요. 배포 → 새 배포 → 웹 앱으로 배포해주세요.&#x27;;
+  SpreadsheetApp.getUi().alert(msg);
+}
+
+// =========================================================
+// API 진입점: GET (조회)
+// =========================================================
+function doGet(e) {
+  try {
+    const action = (e &amp;&amp; e.parameter &amp;&amp; e.parameter.action) || &#x27;list&#x27;;
+    const callback = e &amp;&amp; e.parameter &amp;&amp; e.parameter.callback;
+    let result;
+    
+    switch (action) {
+      case &#x27;list&#x27;:
+        result = { ok: true, data: listProjects() };
+        break;
+      case &#x27;categories&#x27;:
+        result = { ok: true, data: listCategories() };
+        break;
+      case &#x27;ping&#x27;:
+        result = { ok: true, message: &#x27;alive&#x27; };
+        break;
+      default:
+        result = { ok: false, error: &#x27;Unknown action: &#x27; + action };
+    }
+    
+    return jsonResponse_(result, callback);
+  } catch (err) {
+    return jsonResponse_({ ok: false, error: String(err) });
+  }
+}
+
+// =========================================================
+// API 진입점: POST (쓰기) - text/plain으로 받아서 CORS 회피
+// =========================================================
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action;
+    let result;
+    
+    switch (action) {
+      case &#x27;add&#x27;:
+        result = { ok: true, data: addProject(body.project) };
+        break;
+      case &#x27;addMany&#x27;:
+        result = { ok: true, data: addProjects(body.projects) };
+        break;
+      case &#x27;update&#x27;:
+        result = { ok: true, data: updateProject(body.project) };
+        break;
+      case &#x27;toggleDownloaded&#x27;:
+        result = { ok: true, data: toggleDownloaded(body.id) };
+        break;
+      case &#x27;delete&#x27;:
+        result = { ok: true, data: deleteProject(body.id) };
+        break;
+      case &#x27;deleteMany&#x27;:
+        result = { ok: true, data: deleteProjects(body.ids) };
+        break;
+      case &#x27;updateMany&#x27;:
+        result = { ok: true, data: updateProjects(body.ids, body.changes) };
+        break;
+      case &#x27;addCategory&#x27;:
+        result = { ok: true, data: addCategory(body.name) };
+        break;
+      case &#x27;deleteCategory&#x27;:
+        result = { ok: true, data: deleteCategory(body.name) };
+        break;
+      default:
+        result = { ok: false, error: &#x27;Unknown action: &#x27; + action };
+    }
+    
+    return jsonResponse_(result);
+  } catch (err) {
+    return jsonResponse_({ ok: false, error: String(err) });
+  }
+}
+
+function jsonResponse_(obj, callback) {
+  const json = JSON.stringify(obj);
+  if (callback) {
+    // JSONP 응답
+    return ContentService
+      .createTextOutput(callback + &#x27;(&#x27; + json + &#x27;);&#x27;)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// =========================================================
+// 시트 조작 로직
+// =========================================================
+function getSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) { setupSheet(); sheet = ss.getSheetByName(SHEET_NAME); }
+  return sheet;
+}
+
+function rowToObject_(row) {
+  const obj = {};
+  COLUMNS.forEach((col, i) =&gt; {
+    let v = row[i];
+    if (v instanceof Date &amp;&amp; !isNaN(v)) {
+      v = Utilities.formatDate(v, Session.getScriptTimeZone(), &#x27;yyyy-MM-dd&#x27;);
+    }
+    if (col === &#x27;amount&#x27;) v = Number(v) || 0;
+    if (col === &#x27;downloaded&#x27;) v = v === true || v === &#x27;TRUE&#x27; || v === &#x27;true&#x27; || v === 1;
+    obj[col] = v == null ? &#x27;&#x27; : v;
+  });
+  return obj;
+}
+
+function objectToRow_(obj) {
+  return COLUMNS.map(col =&gt; {
+    const v = obj[col];
+    if (v === undefined || v === null) return &#x27;&#x27;;
+    if (col === &#x27;downloaded&#x27;) return !!v;
+    return v;
+  });
+}
+
+function findRowIndexById_(sheet, id) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i &lt; data.length; i++) {
+    if (String(data[i][0]) === String(id)) return i + 1;
+  }
+  return -1;
+}
+
+function newId_() { return Utilities.getUuid(); }
+function nowIso_() { return new Date().toISOString(); }
+
+function listProjects() {
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow &lt;= 1) return [];
+  const values = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues();
+  return values.filter(row =&gt; row[0]).map(rowToObject_);
+}
+
+function addProject(data) {
+  const sheet = getSheet_();
+  const project = {
+    id: data.id || newId_(),
+    title: String(data.title || &#x27;&#x27;).trim(),
+    creator: String(data.creator || &#x27;&#x27;).trim(),
+    amount: Number(data.amount) || 0,
+    category: String(data.category || &#x27;&#x27;),
+    status: data.status || &#x27;pending&#x27;,
+    paymentDate: data.paymentDate || &#x27;&#x27;,
+    deliveryDate: data.deliveryDate || &#x27;&#x27;,
+    downloaded: !!data.downloaded,
+    downloadedAt: data.downloadedAt || &#x27;&#x27;,
+    sharedWith: String(data.sharedWith || &#x27;&#x27;).trim(),
+    reward: String(data.reward || &#x27;&#x27;).trim(),
+    url: String(data.url || &#x27;&#x27;).trim(),
+    notes: String(data.notes || &#x27;&#x27;).trim(),
+    createdAt: data.createdAt || nowIso_(),
+    updatedAt: nowIso_(),
+  };
+  sheet.appendRow(objectToRow_(project));
+  return project;
+}
+
+function addProjects(list) {
+  if (!Array.isArray(list) || list.length === 0) return { added: 0, items: [] };
+  const sheet = getSheet_();
+  const existing = listProjects();
+  const existingKeys = new Set(existing.map(p =&gt; p.title.trim() + &#x27;::&#x27; + p.amount));
+  const toInsert = [];
+  const items = [];
+  list.forEach(data =&gt; {
+    const key = String(data.title || &#x27;&#x27;).trim() + &#x27;::&#x27; + (Number(data.amount) || 0);
+    if (existingKeys.has(key)) return;
+    existingKeys.add(key);
+    const project = {
+      id: newId_(),
+      title: String(data.title || &#x27;&#x27;).trim(),
+      creator: String(data.creator || &#x27;&#x27;).trim(),
+      amount: Number(data.amount) || 0,
+      category: String(data.category || &#x27;&#x27;),
+      status: data.status || &#x27;pending&#x27;,
+      paymentDate: data.paymentDate || &#x27;&#x27;,
+      deliveryDate: data.deliveryDate || &#x27;&#x27;,
+      downloaded: !!data.downloaded,
+      downloadedAt: data.downloadedAt || &#x27;&#x27;,
+      sharedWith: String(data.sharedWith || &#x27;&#x27;).trim(),
+      reward: String(data.reward || &#x27;&#x27;).trim(),
+      url: String(data.url || &#x27;&#x27;).trim(),
+      notes: String(data.notes || &#x27;&#x27;).trim(),
+      createdAt: nowIso_(),
+      updatedAt: nowIso_(),
+    };
+    toInsert.push(objectToRow_(project));
+    items.push(project);
+  });
+  if (toInsert.length &gt; 0) {
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, toInsert.length, COLUMNS.length).setValues(toInsert);
+  }
+  return { added: items.length, items };
+}
+
+function updateProject(data) {
+  if (!data || !data.id) throw new Error(&#x27;id가 필요합니다.&#x27;);
+  const sheet = getSheet_();
+  const rowIdx = findRowIndexById_(sheet, data.id);
+  if (rowIdx &lt; 0) throw new Error(&#x27;해당 프로젝트를 찾을 수 없어요&#x27;);
+  const existingValues = sheet.getRange(rowIdx, 1, 1, COLUMNS.length).getValues()[0];
+  const existing = rowToObject_(existingValues);
+  const merged = Object.assign({}, existing, data, { updatedAt: nowIso_() });
+  sheet.getRange(rowIdx, 1, 1, COLUMNS.length).setValues([objectToRow_(merged)]);
+  return merged;
+}
+
+function toggleDownloaded(id) {
+  const sheet = getSheet_();
+  const rowIdx = findRowIndexById_(sheet, id);
+  if (rowIdx &lt; 0) throw new Error(&#x27;프로젝트 없음&#x27;);
+  const col = COLUMNS.indexOf(&#x27;downloaded&#x27;) + 1;
+  const current = sheet.getRange(rowIdx, col).getValue();
+  const next = !(current === true || current === &#x27;TRUE&#x27; || current === &#x27;true&#x27; || current === 1);
+  sheet.getRange(rowIdx, col).setValue(next);
+  
+  // downloadedAt 자동 기록/삭제
+  const atCol = COLUMNS.indexOf(&#x27;downloadedAt&#x27;) + 1;
+  if (next) {
+    // 체크할 때 오늘 날짜 (기존 값이 있으면 유지)
+    const existingAt = sheet.getRange(rowIdx, atCol).getValue();
+    if (!existingAt) {
+      const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), &#x27;yyyy-MM-dd&#x27;);
+      sheet.getRange(rowIdx, atCol).setValue(today);
+    }
+  } else {
+    // 체크 해제 시 날짜 삭제
+    sheet.getRange(rowIdx, atCol).setValue(&#x27;&#x27;);
+  }
+  
+  const updatedCol = COLUMNS.indexOf(&#x27;updatedAt&#x27;) + 1;
+  sheet.getRange(rowIdx, updatedCol).setValue(nowIso_());
+  const at = sheet.getRange(rowIdx, atCol).getValue();
+  return { id, downloaded: next, downloadedAt: at || &#x27;&#x27; };
+}
+
+function deleteProject(id) {
+  const sheet = getSheet_();
+  const rowIdx = findRowIndexById_(sheet, id);
+  if (rowIdx &lt; 0) throw new Error(&#x27;프로젝트 없음&#x27;);
+  sheet.deleteRow(rowIdx);
+  return { id, deleted: true };
+}
+
+/**
+ * 여러 프로젝트 일괄 삭제
+ * - ID 배열을 받아서 해당 행들을 한번에 삭제
+ * - 뒤에서부터 삭제해야 행 인덱스가 밀리지 않음
+ */
+function deleteProjects(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return { deleted: 0 };
+  const sheet = getSheet_();
+  const data = sheet.getDataRange().getValues();
+  const idSet = new Set(ids.map(String));
+  // 삭제할 행 번호 수집 (1-based, 뒤에서부터)
+  const rowsToDelete = [];
+  for (let i = 1; i &lt; data.length; i++) {
+    if (idSet.has(String(data[i][0]))) rowsToDelete.push(i + 1);
+  }
+  rowsToDelete.sort((a, b) =&gt; b - a);
+  for (const r of rowsToDelete) sheet.deleteRow(r);
+  return { deleted: rowsToDelete.length };
+}
+
+/**
+ * 여러 프로젝트 일괄 수정
+ * - ids 배열과 changes 객체를 받아서 해당 행들의 필드만 업데이트
+ * - 예: updateProjects([id1, id2], { status: &#x27;paid&#x27;, downloaded: true })
+ */
+function updateProjects(ids, changes) {
+  if (!Array.isArray(ids) || ids.length === 0 || !changes) return { updated: 0 };
+  const sheet = getSheet_();
+  const idSet = new Set(ids.map(String));
+  const data = sheet.getDataRange().getValues();
+  let updated = 0;
+  const now = nowIso_();
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), &#x27;yyyy-MM-dd&#x27;);
+
+  for (let i = 1; i &lt; data.length; i++) {
+    if (!idSet.has(String(data[i][0]))) continue;
+    const existing = rowToObject_(data[i]);
+    const merged = Object.assign({}, existing, changes, { updatedAt: now });
+    // downloaded=true로 바꾸는데 downloadedAt이 비어있으면 오늘 날짜
+    if (changes.downloaded === true &amp;&amp; !merged.downloadedAt) {
+      merged.downloadedAt = today;
+    }
+    // downloaded=false로 바꾸면 downloadedAt 비움
+    if (changes.downloaded === false) {
+      merged.downloadedAt = &#x27;&#x27;;
+    }
+    sheet.getRange(i + 1, 1, 1, COLUMNS.length).setValues([objectToRow_(merged)]);
+    updated++;
+  }
+  return { updated };
+}
+
+// =========================================================
+// 카테고리 관리
+// =========================================================
+
+/**
+ * 저장된 커스텀 카테고리 목록 조회
+ */
+function listCategories() {
+  const sheet = getCategoriesSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow &lt;= 1) return [];
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  return values
+    .map(r =&gt; String(r[0] || &#x27;&#x27;).trim())
+    .filter(Boolean);
+}
+
+/**
+ * 커스텀 카테고리 추가
+ */
+function addCategory(name) {
+  name = String(name || &#x27;&#x27;).trim();
+  if (!name) throw new Error(&#x27;카테고리 이름이 필요합니다&#x27;);
+  if (name.length &gt; 30) throw new Error(&#x27;카테고리는 30자 이내&#x27;);
+  const existing = listCategories();
+  if (existing.includes(name)) {
+    return { added: false, name, reason: &#x27;duplicate&#x27; };
+  }
+  const sheet = getCategoriesSheet_();
+  sheet.appendRow([name]);
+  return { added: true, name };
+}
+
+/**
+ * 커스텀 카테고리 삭제 (시트에서 해당 행 제거)
+ * 이미 프로젝트에서 쓰는 카테고리도 삭제 가능 (프로젝트 데이터는 그대로 유지)
+ */
+function deleteCategory(name) {
+  name = String(name || &#x27;&#x27;).trim();
+  if (!name) throw new Error(&#x27;카테고리 이름이 필요합니다&#x27;);
+  const sheet = getCategoriesSheet_();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i &lt; data.length; i++) {
+    if (String(data[i][0]).trim() === name) {
+      sheet.deleteRow(i + 1);
+      return { deleted: true, name };
+    }
+  }
+  return { deleted: false, name, reason: &#x27;not_found&#x27; };
+}
+</script>
+  <script type="text/plain" id="embedded-sheet-setup-gs">/**
+ * ================================================================
+ * 텀블벅 트래커 - 시트 초기화 스크립트
+ * ================================================================
+ * 
+ * 사용법:
+ *   1. Apps Script 편집기에서 이 파일 내용을 Code.gs 맨 아래에 붙여넣기
+ *      (또는 별도 파일로 추가해도 OK)
+ *   2. 저장 후 상단 함수 드롭다운에서 실행하고 싶은 함수 선택
+ *   3. ▶ 실행 버튼 클릭
+ *   4. 권한 요청이 뜨면 허용
+ * 
+ * 포함된 함수:
+ *   - resetAllSheets()          : 모든 시트 삭제 후 새로 생성 (⚠️ 데이터 날아감!)
+ *   - forceCreateHeaders()      : 기존 데이터 유지하고 헤더만 강제로 재생성
+ *   - forceCreateCategorySheet(): categories 시트 강제 생성
+ *   - checkSheetStatus()        : 현재 시트 상태 점검 (읽기 전용)
+ */
+
+/**
+ * ⚠️ 모든 시트를 삭제하고 완전히 처음부터 다시 만들기
+ * 기존 데이터는 모두 사라집니다!
+ */
+function resetAllSheets() {
+  const ui = SpreadsheetApp.getUi();
+  const confirm = ui.alert(
+    &#x27;⚠️ 전체 초기화&#x27;,
+    &#x27;projects 시트와 categories 시트를 모두 삭제하고 새로 만들어요.\n\n기존 데이터는 전부 사라집니다. 계속할까요?&#x27;,
+    ui.ButtonSet.YES_NO
+  );
+  if (confirm !== ui.Button.YES) return;
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. 기존 시트 삭제
+  const projectsSheet = ss.getSheetByName(&#x27;projects&#x27;);
+  if (projectsSheet) ss.deleteSheet(projectsSheet);
+  
+  const categoriesSheet = ss.getSheetByName(&#x27;categories&#x27;);
+  if (categoriesSheet) ss.deleteSheet(categoriesSheet);
+  
+  // 2. 시트가 최소 1개는 있어야 하므로 임시 시트 확인
+  if (ss.getSheets().length === 0) {
+    ss.insertSheet(&#x27;임시&#x27;);
+  }
+  
+  // 3. projects 시트 생성
+  const COLUMNS = [
+    &#x27;id&#x27;, &#x27;title&#x27;, &#x27;creator&#x27;, &#x27;amount&#x27;, &#x27;category&#x27;,
+    &#x27;status&#x27;, &#x27;paymentDate&#x27;, &#x27;deliveryDate&#x27;, &#x27;downloaded&#x27;, &#x27;downloadedAt&#x27;,
+    &#x27;sharedWith&#x27;, &#x27;reward&#x27;, &#x27;url&#x27;, &#x27;notes&#x27;, &#x27;createdAt&#x27;, &#x27;updatedAt&#x27;
+  ];
+  const projects = ss.insertSheet(&#x27;projects&#x27;);
+  projects.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  projects.getRange(1, 1, 1, COLUMNS.length)
+    .setFontWeight(&#x27;bold&#x27;)
+    .setBackground(&#x27;#1f1a14&#x27;)
+    .setFontColor(&#x27;#fbf7ee&#x27;);
+  projects.setFrozenRows(1);
+  projects.setColumnWidth(1, 260);   // id
+  projects.setColumnWidth(2, 260);   // title
+  projects.setColumnWidth(3, 140);   // creator
+  projects.setColumnWidth(4, 100);   // amount
+  projects.setColumnWidth(5, 100);   // category
+  projects.setColumnWidth(6, 100);   // status
+  projects.setColumnWidth(7, 110);   // paymentDate
+  projects.setColumnWidth(8, 110);   // deliveryDate
+  projects.setColumnWidth(9, 90);    // downloaded
+  projects.setColumnWidth(10, 110);  // downloadedAt
+  projects.setColumnWidth(11, 160);  // sharedWith
+  projects.setColumnWidth(12, 220);  // reward
+  projects.setColumnWidth(13, 220);  // url
+  projects.setColumnWidth(14, 240);  // notes
+  projects.setColumnWidth(15, 180);  // createdAt
+  projects.setColumnWidth(16, 180);  // updatedAt
+  
+  // 4. categories 시트 생성
+  const categories = ss.insertSheet(&#x27;categories&#x27;);
+  categories.getRange(1, 1).setValue(&#x27;name&#x27;)
+    .setFontWeight(&#x27;bold&#x27;)
+    .setBackground(&#x27;#1f1a14&#x27;)
+    .setFontColor(&#x27;#fbf7ee&#x27;);
+  categories.setFrozenRows(1);
+  categories.setColumnWidth(1, 240);
+  
+  // 5. 임시 시트 있으면 삭제
+  const tempSheet = ss.getSheetByName(&#x27;임시&#x27;);
+  if (tempSheet &amp;&amp; ss.getSheets().length &gt; 1) {
+    ss.deleteSheet(tempSheet);
+  }
+  
+  ui.alert(&#x27;✅ 초기화 완료&#x27;, &#x27;projects 시트와 categories 시트가 새로 만들어졌어요.\n이제 앱에서 새로 데이터를 넣을 수 있습니다.&#x27;, ui.ButtonSet.OK);
+}
+
+/**
+ * 기존 데이터를 유지한 채 헤더만 강제로 다시 쓰기
+ * 헤더가 깨졌거나 컬럼 순서가 엉켰을 때 사용
+ * ※ 데이터 행(2행부터)은 건드리지 않음
+ */
+function forceCreateHeaders() {
+  const COLUMNS = [
+    &#x27;id&#x27;, &#x27;title&#x27;, &#x27;creator&#x27;, &#x27;amount&#x27;, &#x27;category&#x27;,
+    &#x27;status&#x27;, &#x27;paymentDate&#x27;, &#x27;deliveryDate&#x27;, &#x27;downloaded&#x27;, &#x27;downloadedAt&#x27;,
+    &#x27;sharedWith&#x27;, &#x27;reward&#x27;, &#x27;url&#x27;, &#x27;notes&#x27;, &#x27;createdAt&#x27;, &#x27;updatedAt&#x27;
+  ];
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(&#x27;projects&#x27;);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(&#x27;projects&#x27;);
+  }
+  
+  // 현재 시트에 컬럼 수가 부족하면 늘려주기
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols &lt; COLUMNS.length) {
+    sheet.insertColumnsAfter(currentCols, COLUMNS.length - currentCols);
+  }
+  
+  // 1행에 헤더 강제 기록
+  sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  sheet.getRange(1, 1, 1, COLUMNS.length)
+    .setFontWeight(&#x27;bold&#x27;)
+    .setBackground(&#x27;#1f1a14&#x27;)
+    .setFontColor(&#x27;#fbf7ee&#x27;);
+  sheet.setFrozenRows(1);
+  
+  // 컬럼 너비
+  sheet.setColumnWidth(1, 260);
+  sheet.setColumnWidth(2, 260);
+  sheet.setColumnWidth(3, 140);
+  sheet.setColumnWidth(4, 100);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 100);
+  sheet.setColumnWidth(7, 110);
+  sheet.setColumnWidth(8, 110);
+  sheet.setColumnWidth(9, 90);
+  sheet.setColumnWidth(10, 110);
+  sheet.setColumnWidth(11, 160);
+  sheet.setColumnWidth(12, 220);
+  sheet.setColumnWidth(13, 220);
+  sheet.setColumnWidth(14, 240);
+  sheet.setColumnWidth(15, 180);
+  sheet.setColumnWidth(16, 180);
+  
+  try {
+    SpreadsheetApp.getUi().alert(
+      &#x27;✅ 헤더 생성 완료&#x27;,
+      &#x27;projects 시트 1행에 헤더 16개가 기록되었어요.\n기존 데이터 행은 그대로 유지됩니다.&#x27;,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  } catch (e) {}
+}
+
+/**
+ * categories 시트만 강제로 생성
+ */
+function forceCreateCategorySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(&#x27;categories&#x27;);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(&#x27;categories&#x27;);
+  }
+  
+  sheet.getRange(1, 1).setValue(&#x27;name&#x27;)
+    .setFontWeight(&#x27;bold&#x27;)
+    .setBackground(&#x27;#1f1a14&#x27;)
+    .setFontColor(&#x27;#fbf7ee&#x27;);
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 240);
+  
+  try {
+    SpreadsheetApp.getUi().alert(&#x27;✅ categories 시트 준비 완료&#x27;);
+  } catch (e) {}
+}
+
+/**
+ * 현재 시트 상태 점검 (읽기 전용, 아무것도 변경하지 않음)
+ * 로그에 현재 헤더와 행 개수를 출력
+ */
+function checkSheetStatus() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const messages = [];
+  
+  // projects 시트 점검
+  const projects = ss.getSheetByName(&#x27;projects&#x27;);
+  if (!projects) {
+    messages.push(&#x27;❌ projects 시트가 없음&#x27;);
+  } else {
+    const lastRow = projects.getLastRow();
+    const lastCol = projects.getLastColumn();
+    const headers = projects.getRange(1, 1, 1, lastCol).getValues()[0];
+    messages.push(&#x27;✓ projects 시트:&#x27;);
+    messages.push(&#x27;  - 행 개수: &#x27; + (lastRow - 1) + &#x27;건&#x27;);
+    messages.push(&#x27;  - 컬럼 수: &#x27; + lastCol);
+    messages.push(&#x27;  - 헤더:&#x27;);
+    headers.forEach((h, i) =&gt; {
+      const col = String.fromCharCode(65 + i);  // A, B, C...
+      messages.push(`    ${col}: ${h || &#x27;(비어있음)&#x27;}`);
+    });
+  }
+  
+  messages.push(&#x27;&#x27;);
+  
+  // categories 시트 점검
+  const categories = ss.getSheetByName(&#x27;categories&#x27;);
+  if (!categories) {
+    messages.push(&#x27;❌ categories 시트가 없음&#x27;);
+  } else {
+    const lastRow = categories.getLastRow();
+    messages.push(&#x27;✓ categories 시트:&#x27;);
+    messages.push(&#x27;  - 커스텀 카테고리 개수: &#x27; + Math.max(0, lastRow - 1));
+    if (lastRow &gt; 1) {
+      const cats = categories.getRange(2, 1, lastRow - 1, 1).getValues().map(r =&gt; r[0]).filter(Boolean);
+      messages.push(&#x27;  - 목록: &#x27; + cats.join(&#x27;, &#x27;));
+    }
+  }
+  
+  const report = messages.join(&#x27;\n&#x27;);
+  Logger.log(report);
+  
+  try {
+    SpreadsheetApp.getUi().alert(&#x27;📊 시트 상태&#x27;, report, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    // UI 컨텍스트가 없을 때는 로그로만
+  }
+  
+  return report;
+}
+</script>
 </head>
 <body>
   <div class="grain"></div>
@@ -868,17 +1665,111 @@
   <!-- 최초 API URL 설정 화면 -->
   <div class="setup-screen" id="setup-screen" style="display:none;">
     <div class="setup-box">
-      <h1>✦ 텀블벅 트래커</h1>
-      <p class="sub">Apps Script API 주소를 먼저 연결해주세요.</p>
-      <ol>
-        <li>구글 시트에서 <b>확장 → Apps Script</b> 열기</li>
-        <li><b>배포 → 새 배포 → 웹 앱</b>으로 배포</li>
-        <li>"다음 사용자로 실행"은 <b>나</b>, "액세스 권한"은 <b>모든 사용자</b>로 설정</li>
-        <li>나오는 웹앱 URL을 아래에 붙여넣기</li>
-      </ol>
-      <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-save-url">연결하기</button>
+      <h1>텀블벅 트래커</h1>
+      <p class="sub">처음이시라면 아래 설정 가이드를 따라주세요. 이미 배포하셨다면 맨 아래에 URL을 입력하세요.</p>
+      
+      <div class="setup-tabs">
+        <button class="setup-tab active" data-setup-tab="quick">빠른 연결</button>
+        <button class="setup-tab" data-setup-tab="full">처음부터 설치하기</button>
+      </div>
+      
+      <!-- 빠른 연결 탭 -->
+      <div class="setup-panel active" data-setup-panel="quick">
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          Apps Script 웹앱 URL이 있으시면 바로 붙여넣으세요.
+        </p>
+        <label style="display:block; margin-bottom: 16px;">
+          <span style="display:block; font-size:12px; font-weight:500; color: var(--text-muted); margin-bottom:5px;">Apps Script 웹앱 URL</span>
+          <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;" />
+        </label>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-save-url">연결하기</button>
+        </div>
+      </div>
+      
+      <!-- 전체 가이드 탭 -->
+      <div class="setup-panel" data-setup-panel="full">
+        <div class="guide-section">
+          <h3><span class="step-num">1</span>구글 시트 만들기</h3>
+          <ol>
+            <li><a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a> 접속 → <b>+ 빈 스프레드시트</b> 클릭</li>
+            <li>상단 메뉴에서 <b>확장 프로그램 → Apps Script</b> 클릭</li>
+            <li>새 탭에서 Apps Script 편집기가 열려요</li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="step-num">2</span>코드 붙여넣기</h3>
+          <ol>
+            <li>편집기에서 <b>Code.gs</b> 열어서 기존 코드 전부 지우기 (Ctrl+A → Del)</li>
+            <li>아래 <b>Code.gs 복사</b> 버튼 눌러서 붙여넣고 💾 저장</li>
+          </ol>
+          <div class="code-actions">
+            <button class="btn btn-primary" data-copy="code-gs">📋 Code.gs 복사</button>
+            <details class="code-details">
+              <summary>내용 펼쳐보기</summary>
+              <pre id="code-gs-content" class="code-preview"></pre>
+            </details>
+          </div>
+          <ol start="3" style="margin-top: 12px;">
+            <li>왼쪽 파일 목록에서 <b>+</b> → <b>스크립트</b> → 이름 <code>SheetSetup</code> 입력</li>
+            <li>기본 코드 지우고 아래 <b>SheetSetup.gs 복사</b> 버튼 눌러서 붙여넣고 💾 저장</li>
+          </ol>
+          <div class="code-actions">
+            <button class="btn btn-primary" data-copy="sheet-setup-gs">📋 SheetSetup.gs 복사</button>
+            <details class="code-details">
+              <summary>내용 펼쳐보기</summary>
+              <pre id="sheet-setup-gs-content" class="code-preview"></pre>
+            </details>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="step-num">3</span>시트 초기화 실행</h3>
+          <ol>
+            <li>상단 함수 드롭다운 → <b>setupSheet</b> 선택 → ▶ 실행</li>
+            <li>첫 실행 시 권한 검토 창이 뜸: <b>권한 검토 → 본인 계정 선택 → 고급 → 프로젝트로 이동 → 허용</b></li>
+            <li style="color: var(--text-muted);">⚠️ 경고는 구글이 아직 검증 안 한 개인 스크립트라서 뜨는 것. 본인이 만든 거니 안전해요</li>
+            <li>실행 완료 후 시트에 <code>projects</code> 탭과 헤더 16개가 생겼는지 확인</li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="step-num">4</span>웹앱으로 배포</h3>
+          <ol>
+            <li>Apps Script 편집기 오른쪽 위 <b>배포 → 새 배포</b></li>
+            <li>⚙ 톱니 아이콘 → <b>웹 앱</b> 선택</li>
+            <li>설정:
+              <ul>
+                <li>다음 사용자로 실행: <b>나</b></li>
+                <li>액세스 권한이 있는 사용자: <b>모든 사용자</b></li>
+              </ul>
+            </li>
+            <li style="color: var(--text-muted);">🔒 "모든 사용자"로 설정해야 브라우저 접근이 가능해요. URL을 아는 사람만 쓸 수 있으니 걱정 말아요</li>
+            <li><b>배포</b> 클릭 → 권한 허용 → <b>웹 앱 URL</b> 나옴 → 복사</li>
+          </ol>
+        </div>
+
+        <div class="guide-section">
+          <h3><span class="step-num">5</span>연결 완료</h3>
+          <ol>
+            <li>위의 <b>빠른 연결</b> 탭으로 돌아가서 복사한 URL 붙여넣기</li>
+            <li><b>연결하기</b> 클릭 → 끝! 🎉</li>
+          </ol>
+          <div style="margin-top: 12px;">
+            <button class="btn btn-primary" id="btn-goto-connect">👉 연결하러 가기</button>
+          </div>
+        </div>
+
+        <div class="guide-section guide-tips">
+          <h3>💡 팁</h3>
+          <ul>
+            <li>문제가 생기면 <code>SheetSetup.gs</code>의 <code>checkSheetStatus()</code> 실행</li>
+            <li>카테고리는 카드에서 태그 클릭으로 바로 추가/변경 가능</li>
+            <li>키보드 단축키: <kbd>N</kbd>(추가), <kbd>/</kbd>(검색), <kbd>S</kbd>(선택 모드)</li>
+            <li>텀블벅 "내 후원 현황" 페이지를 전체 복사해서 "붙여넣기로 추가"하면 자동으로 정리됨</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -1949,12 +2840,76 @@
     document.getElementById('setup-screen').style.display = 'grid';
     document.getElementById('app').style.display = 'none';
     document.getElementById('api-url-input').value = getApiUrl();
-    document.getElementById('api-url-input').focus();
+    // 코드 미리보기 채우기
+    const codeGsEl = document.getElementById('embedded-code-gs');
+    const sheetSetupEl = document.getElementById('embedded-sheet-setup-gs');
+    if (codeGsEl) {
+      document.getElementById('code-gs-content').textContent = codeGsEl.textContent;
+    }
+    if (sheetSetupEl) {
+      document.getElementById('sheet-setup-gs-content').textContent = sheetSetupEl.textContent;
+    }
   }
   function showApp() {
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
   }
+  
+  // setup 탭 전환
+  document.querySelectorAll('.setup-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.setupTab;
+      document.querySelectorAll('.setup-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.setup-panel').forEach(p => {
+        p.classList.toggle('active', p.dataset.setupPanel === target);
+      });
+      if (target === 'quick') {
+        setTimeout(() => document.getElementById('api-url-input').focus(), 100);
+      }
+    });
+  });
+  
+  // "연결하러 가기" 버튼 - 빠른 연결 탭으로 이동
+  const gotoConnectBtn = document.getElementById('btn-goto-connect');
+  if (gotoConnectBtn) {
+    gotoConnectBtn.addEventListener('click', () => {
+      document.querySelector('.setup-tab[data-setup-tab="quick"]').click();
+    });
+  }
+  
+  // 복사 버튼들
+  document.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = btn.dataset.copy;
+      const elId = target === 'code-gs' ? 'embedded-code-gs' : 'embedded-sheet-setup-gs';
+      const content = document.getElementById(elId)?.textContent || '';
+      if (!content) { toast('복사할 내용이 없어요'); return; }
+      try {
+        await navigator.clipboard.writeText(content);
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ 복사 완료!';
+        btn.disabled = true;
+        setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
+      } catch (e) {
+        // 클립보드 API 실패 시 폴백 (텍스트 선택)
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ 복사 완료!';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        } catch (err) {
+          toast('복사 실패. 내용을 직접 선택해서 복사해주세요.');
+        }
+        document.body.removeChild(ta);
+      }
+    });
+  });
 
   document.getElementById('btn-save-url').addEventListener('click', async () => {
     const url = document.getElementById('api-url-input').value.trim();
