@@ -257,11 +257,14 @@
       border-radius: var(--radius);
       padding: 10px 14px;
       display: grid;
-      grid-template-columns: auto auto 1fr auto auto auto;
+      grid-template-columns: auto auto 1fr 100px 100px 130px;
       align-items: center;
       gap: 14px;
       transition: all .12s;
       cursor: pointer;
+    }
+    .status-cell {
+      display: flex; justify-content: center;
     }
     .project .project-link-cell {
       display: flex; align-items: center; justify-content: flex-end;
@@ -436,6 +439,7 @@
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.01em;
+      justify-self: end;
     }
     .project .date-info {
       display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
@@ -480,11 +484,14 @@
     }
 
     .status {
+      display: inline-block;
       padding: 2px 8px;
       font-size: 10px; font-weight: 600;
       border-radius: 3px;
       letter-spacing: .02em;
       white-space: nowrap;
+      width: auto;
+      flex: 0 0 auto;
     }
     .status-pending { background: var(--info-soft); color: var(--info); }
     .status-paid { background: var(--ok-soft); color: var(--ok); }
@@ -806,10 +813,10 @@
         gap: 10px;
         padding: 10px 12px;
       }
-      .project .status {
+      .status-cell {
         grid-column: 2 / 4;
         grid-row: 2;
-        justify-self: start;
+        justify-content: flex-start;
       }
       .project .date-info {
         grid-column: 2 / -1;
@@ -1402,7 +1409,9 @@
             ${p.notes ? `<span title="${esc(p.notes)}">📝</span>` : ''}
           </div>
         </div>
-        <span class="status status-${p.status}">${sl(p.status)}</span>
+        <div class="status-cell">
+          <span class="status status-${p.status}">${sl(p.status)}</span>
+        </div>
         <div class="amount">${fc(p.amount)}원</div>
         <div class="date-info ${urgent ? 'urgent' : ''}">
           ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span> ${fd(p.paymentDate)}</span>` : ''}
