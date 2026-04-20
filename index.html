@@ -300,6 +300,33 @@
     }
     .project.is-done .title { color: var(--text-muted); }
     .project.is-done .amount { color: var(--text-muted); }
+    
+    /* 30일+ 미수령 - 오른쪽 노란 띠 + 우상단 라벨 */
+    .project.is-stale {
+      position: relative;
+      overflow: hidden;
+      padding-right: 22px; /* 띠 공간 확보 */
+    }
+    .project.is-stale::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 4px;
+      background: var(--warn);
+    }
+    .project.is-stale::before {
+      content: '30일+';
+      position: absolute;
+      top: 8px; right: 12px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--warn);
+      background: var(--warn-soft);
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+    }
     .project .check {
       width: 18px; height: 18px;
       border: 1.5px solid var(--border-strong);
@@ -1394,7 +1421,7 @@
     })();
     
     return `
-      <article class="project ${selected ? 'selected' : ''} ${p.downloaded ? 'is-done' : ''}" data-id="${esc(p.id)}">
+      <article class="project ${selected ? 'selected' : ''} ${p.downloaded ? 'is-done' : ''} ${stale ? 'is-stale' : ''}" data-id="${esc(p.id)}">
         <div class="select-box ${selected ? 'checked' : ''}"></div>
         <div class="check ${p.downloaded ? 'done' : ''}" title="수령 완료 표시"></div>
         <div class="info">
@@ -1419,8 +1446,7 @@
         <div class="date-info ${urgent ? 'urgent' : ''}">
           ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span><span class="date-value">${fd(p.paymentDate)}</span></span>` : ''}
           ${p.deliveryDate ? `<span class="date-line"><span class="date-label">${p.status === 'pending' ? '결제' : '전달'}</span><span class="date-value">${fd(p.deliveryDate)}</span>${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}</span>` : ''}
-          ${stale ? '<span class="date-line"><span class="stale-badge">⚠ 30일+ 미수령</span></span>' : ''}
-          ${!p.paymentDate && !p.deliveryDate && !stale ? '<span class="date-line muted">-</span>' : ''}
+          ${!p.paymentDate && !p.deliveryDate ? '<span class="date-line muted">-</span>' : ''}
         </div>
       </article>`;
   }
