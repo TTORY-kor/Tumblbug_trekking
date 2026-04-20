@@ -257,14 +257,15 @@
       border-radius: var(--radius);
       padding: 10px 14px;
       display: grid;
-      grid-template-columns: auto auto 1fr 100px 100px 130px;
+      grid-template-columns: auto auto 1fr 90px 90px 150px;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       transition: all .12s;
       cursor: pointer;
     }
     .status-cell {
-      display: flex; justify-content: center;
+      display: flex;
+      justify-content: flex-end;
     }
     .project .project-link-cell {
       display: flex; align-items: center; justify-content: flex-end;
@@ -445,26 +446,29 @@
       display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
       font-size: 11px; color: var(--text-muted);
       text-align: right;
-      min-width: 110px;
     }
     .project .date-line {
-      display: flex; align-items: center; gap: 4px;
-      font-size: 11px; color: var(--text);
+      display: flex; align-items: center; gap: 6px;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      justify-content: flex-end;
+      width: 100%;
     }
     .project .date-line.muted { color: var(--text-subtle); }
     .project .date-label {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--text-subtle);
-      background: var(--surface-2);
-      padding: 1px 5px;
-      border-radius: 3px;
-      letter-spacing: .02em;
       font-weight: 500;
+      min-width: 24px;
+      text-align: left;
     }
-    .project .date-info.urgent .date-line { color: var(--warn); }
-    .project .dday { font-size: 10px; color: var(--text-subtle); margin-left: 3px; }
+    .project .date-value {
+      color: var(--text);
+      font-weight: 500;
+      font-size: 11px;
+    }
+    .project .date-info.urgent .date-value { color: var(--warn); }
+    .project .dday { font-size: 10px; color: var(--text-subtle); font-weight: 500; }
     .project .dday.urgent { color: var(--warn); font-weight: 600; }
 
     .reward-line {
@@ -500,12 +504,12 @@
 
     .stale-badge {
       display: inline-block;
-      padding: 1px 6px;
+      padding: 1px 5px;
       background: var(--warn-soft);
       color: var(--warn);
       border-radius: 3px;
-      font-size: 10px; font-weight: 600;
-      margin-left: 4px;
+      font-size: 9px; font-weight: 600;
+      letter-spacing: -0.01em;
     }
     .downloaded-at {
       font-size: 10px; color: var(--ok);
@@ -1397,7 +1401,6 @@
           <div class="title-row">
             <span class="title">${esc(p.title || '(제목 없음)')}</span>
             <button class="edit-btn-inline" title="편집">✎</button>
-            ${stale ? '<span class="stale-badge">30일+</span>' : ''}
           </div>
           ${p.reward ? `<div class="reward-line">🎁 ${esc(p.reward)}</div>` : ''}
           <div class="meta">
@@ -1414,8 +1417,8 @@
         </div>
         <div class="amount">${fc(p.amount)}원</div>
         <div class="date-info ${urgent ? 'urgent' : ''}">
-          ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span> ${fd(p.paymentDate)}</span>` : ''}
-          ${p.deliveryDate ? `<span class="date-line"><span class="date-label">${p.status === 'pending' ? '결제' : '전달'}</span> ${fd(p.deliveryDate)}${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}</span>` : ''}
+          ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span><span class="date-value">${fd(p.paymentDate)}</span></span>` : ''}
+          ${p.deliveryDate ? `<span class="date-line"><span class="date-label">${p.status === 'pending' ? '결제' : '전달'}</span><span class="date-value">${fd(p.deliveryDate)}</span>${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}${stale ? '<span class="stale-badge">30일+</span>' : ''}</span>` : (stale ? `<span class="date-line"><span class="stale-badge">30일+</span></span>` : '')}
           ${!p.paymentDate && !p.deliveryDate ? '<span class="date-line muted">-</span>' : ''}
         </div>
       </article>`;
