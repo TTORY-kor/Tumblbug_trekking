@@ -460,7 +460,11 @@
     { re: /^후원\s*무산\s*$/, status: 'cancelled' },
     { re: /^펀딩\s*무산\s*$/, status: 'cancelled' },
     { re: /^프로젝트\s*무산\s*$/, status: 'cancelled' },
+    { re: /^후원\s*취소\s*$/, status: 'cancelled' },
+    { re: /^예약\s*주문\s*취소\s*$/, status: 'cancelled' },
+    { re: /^예약\s*주문\s*중단\s*$/, status: 'cancelled' },
     { re: /^결제\s*실패\s*$/, status: 'failed' },
+    { re: /^결제\s*최종\s*실패\s*$/, status: 'failed' },
     { re: /^재결제\s*$/, status: 'failed' },
   ];
   function detectStatusMarker(line) {
@@ -535,10 +539,14 @@
         break;
       }
     }
-    // 선물 전달 예정/완료일
+    // 선물 전달 예정/완료일 또는 결제 예정일 (후원 예약 상태에서 나타남)
     let deliveryDate = '';
     for (const l of lines) {
       if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*선물\s*전달/.test(l)) {
+        deliveryDate = parseTumblbugDate(l);
+        break;
+      }
+      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*결제\s*예정/.test(l)) {
         deliveryDate = parseTumblbugDate(l);
         break;
       }
@@ -553,7 +561,7 @@
       l === '다운받기' ||
       l.includes('디지털선물을 전달') ||
       AMOUNT_RE.test(l) ||
-      /\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*(후원|선물\s*전달)/.test(l)
+      /\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*(후원|선물\s*전달|결제\s*예정)/.test(l)
     );
     const contentLines = lines.filter(l => !isNoise(l));
     let title = contentLines[0] || '';
