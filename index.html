@@ -78,6 +78,35 @@
     }
     .grain { display: none; }
 
+    .trial-intro {
+      background: var(--accent-soft);
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    
+    /* 임시 모드 배지 */
+    .trial-mode-bar {
+      display: none;
+      background: var(--warn-soft);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 8px 24px;
+      font-size: 12px;
+      color: var(--warn);
+      text-align: center;
+    }
+    body.trial-mode .trial-mode-bar { display: block; }
+    body.trial-mode .trial-mode-bar strong { font-weight: 600; }
+    .trial-mode-bar a {
+      color: var(--warn);
+      font-weight: 600;
+      margin-left: 8px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    /* 임시 모드에서 감추는 UI들 */
+    body.trial-mode .sync-indicator { display: none; }
+    
     /* Setup screen */
     .setup-screen { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
     .setup-box {
@@ -1670,7 +1699,8 @@ function checkSheetStatus() {
       
       <div class="setup-tabs">
         <button class="setup-tab active" data-setup-tab="quick">빠른 연결</button>
-        <button class="setup-tab" data-setup-tab="full">처음부터 설치하기</button>
+        <button class="setup-tab" data-setup-tab="trial">시트 없이 확인</button>
+        <button class="setup-tab" data-setup-tab="full">처음부터 설치</button>
       </div>
       
       <!-- 빠른 연결 탭 -->
@@ -1684,6 +1714,28 @@ function checkSheetStatus() {
         </label>
         <div class="btn-row">
           <button class="btn btn-primary" id="btn-save-url">연결하기</button>
+        </div>
+      </div>
+      
+      <!-- 시트 없이 확인 탭 -->
+      <div class="setup-panel" data-setup-panel="trial">
+        <div class="trial-intro">
+          <p style="color: var(--text); font-size: 14px; margin-bottom: 8px; font-weight: 500;">
+            🎭 임시 확인 모드
+          </p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px; line-height: 1.6;">
+            텀블벅 후원 목록을 붙여넣기만 하면 바로 확인할 수 있어요.<br>
+            데이터는 <b>브라우저 메모리에만 저장</b>되고, 새로고침하면 사라져요.<br>
+            나중에 시트에 연결하면 계속 관리할 수 있어요.
+          </p>
+        </div>
+        <label style="display:block; margin-bottom: 12px;">
+          <span style="display:block; font-size:12px; font-weight:500; color: var(--text-muted); margin-bottom:5px;">텀블벅 후원 현황 페이지를 복사해서 여기에 붙여넣으세요</span>
+          <textarea id="trial-paste-area" placeholder="텀블벅 '내 후원 현황' 페이지 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 여기에 붙여넣기(Ctrl+V)" style="width:100%; min-height: 140px; font-family: var(--font-mono); font-size: 11px;"></textarea>
+        </label>
+        <div class="btn-row">
+          <button class="btn" id="btn-trial-cancel">취소</button>
+          <button class="btn btn-primary" id="btn-trial-start">분석하고 확인하기</button>
         </div>
       </div>
       
@@ -1776,6 +1828,10 @@ function checkSheetStatus() {
 
   <!-- 메인 앱 -->
   <div id="app" style="display:none;">
+    <div class="trial-mode-bar">
+      🎭 <strong>임시 확인 모드</strong> — 데이터는 저장되지 않아요. 새로고침 시 사라집니다.
+      <a id="btn-upgrade-sheet">시트 연결하기 →</a>
+    </div>
     <header class="header">
       <div class="header-inner">
         <div class="brand">
@@ -1981,6 +2037,10 @@ function checkSheetStatus() {
   //  - GET: 일반 fetch
   //  - POST: text/plain 으로 보내기 (preflight 회피)
   async function apiCall(method, body) {
+    // 임시 모드에서는 서버 호출을 전부 우회
+    if (state.trialMode) {
+      return handleTrialApiCall(method, body);
+    }
     const url = getApiUrl();
     if (!url) throw new Error('API URL이 설정되지 않았어요');
     setSyncing(true);
@@ -2005,6 +2065,49 @@ function checkSheetStatus() {
       setSyncing(false, false, e.message);
       throw e;
     }
+  }
+  
+  /**
+   * 임시 모드에서 API 호출을 로컬 state 조작으로 대체
+   * 시트에 저장하지 않고 메모리에서만 동작
+   */
+  function handleTrialApiCall(method, body) {
+    const action = body?.action;
+    if (method === 'GET') {
+      if (action === 'list') return [...state.projects];
+      if (action === 'categories') return [];
+      if (action === 'ping') return { message: 'trial' };
+    }
+    if (method === 'POST') {
+      if (action === 'add') {
+        const p = { ...body.project, id: 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        return p;
+      }
+      if (action === 'addMany') {
+        const now = new Date().toISOString();
+        return (body.projects || []).map((p, i) => ({
+          ...p,
+          id: 'tmp_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+          createdAt: now, updatedAt: now,
+        }));
+      }
+      if (action === 'update') return { ...body.project };
+      if (action === 'toggleDownloaded') {
+        const p = state.projects.find(x => x.id === body.id);
+        const next = !(p?.downloaded);
+        const today = (() => {
+          const n = new Date();
+          return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+        })();
+        return { id: body.id, downloaded: next, downloadedAt: next ? today : '' };
+      }
+      if (action === 'delete') return { id: body.id, deleted: true };
+      if (action === 'deleteMany') return { deleted: (body.ids || []).length };
+      if (action === 'updateMany') return { updated: (body.ids || []).length };
+      if (action === 'addCategory') return { added: true, name: body.name };
+      if (action === 'deleteCategory') return { deleted: true, name: body.name };
+    }
+    return {};
   }
 
   function setSyncing(isSyncing, success = true, errMsg = '') {
@@ -2230,6 +2333,7 @@ function checkSheetStatus() {
     sortBy: 'recent', editingId: null, parsedCandidates: [],
     selectMode: false,
     selectedIds: new Set(),
+    trialMode: false,  // 임시 확인 모드 (시트 연결 없음)
   };
 
   // ================= 렌더링 =================
@@ -2918,8 +3022,58 @@ function checkSheetStatus() {
       return;
     }
     setApiUrl(url);
+    state.trialMode = false;
+    document.body.classList.remove('trial-mode');
     showApp();
     await loadProjects();
+  });
+  
+  // 시트 없이 확인 모드 시작
+  document.getElementById('btn-trial-start').addEventListener('click', () => {
+    const text = document.getElementById('trial-paste-area').value;
+    if (!text.trim()) {
+      toast('텀블벅 페이지를 먼저 붙여넣어주세요');
+      return;
+    }
+    const parsed = parseTumblbugText(text);
+    if (parsed.length === 0) {
+      toast('인식할 수 있는 후원 항목이 없어요. 텀블벅 "내 후원 현황" 페이지를 복사했는지 확인해주세요');
+      return;
+    }
+    // 메모리에 채우기
+    const now = new Date().toISOString();
+    state.projects = parsed.map((p, i) => ({
+      ...p,
+      id: 'tmp_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+      downloadedAt: '',
+      sharedWith: '',
+      reward: p.reward || '',
+      createdAt: now,
+      updatedAt: now,
+    }));
+    state.trialMode = true;
+    document.body.classList.add('trial-mode');
+    showApp();
+    renderAll();
+    toast(`${parsed.length}건 인식됨 · 임시 확인 모드로 시작`);
+  });
+  
+  document.getElementById('btn-trial-cancel').addEventListener('click', () => {
+    document.getElementById('trial-paste-area').value = '';
+    document.querySelector('.setup-tab[data-setup-tab="quick"]').click();
+  });
+  
+  // 임시 모드에서 시트 연결로 전환
+  document.getElementById('btn-upgrade-sheet').addEventListener('click', () => {
+    if (state.projects.length > 0) {
+      if (!confirm('시트 연결 설정 화면으로 이동할까요?\n현재 임시 데이터는 사라집니다.')) return;
+    }
+    state.trialMode = false;
+    state.projects = [];
+    document.body.classList.remove('trial-mode');
+    showSetup();
+    // 빠른 연결 탭으로
+    document.querySelector('.setup-tab[data-setup-tab="quick"]').click();
   });
 
   document.getElementById('sync-indicator').addEventListener('click', () => {
@@ -2933,7 +3087,13 @@ function checkSheetStatus() {
   document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setView(tab.dataset.view)));
   document.getElementById('btn-paste').addEventListener('click', openPasteModal);
   document.getElementById('btn-manual').addEventListener('click', () => openEditModal());
-  document.getElementById('btn-reload').addEventListener('click', loadProjects);
+  document.getElementById('btn-reload').addEventListener('click', () => {
+    if (state.trialMode) {
+      toast('임시 모드에서는 시트에서 불러올 수 없어요');
+      return;
+    }
+    loadProjects();
+  });
   document.getElementById('search-input').addEventListener('input', e => { state.search = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
   document.getElementById('filter-status').addEventListener('change', e => { state.filterStatus = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
   document.getElementById('filter-category').addEventListener('change', e => { state.filterCategory = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
