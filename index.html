@@ -1,2051 +1,230 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>텀블벅 후원 트래커</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* Modern minimal theme */
-      --bg: #fafafa;
-      --surface: #ffffff;
-      --surface-2: #f4f4f5;
-      --surface-3: #e4e4e7;
-      --border: #e4e4e7;
-      --border-strong: #d4d4d8;
-      --text: #09090b;
-      --text-muted: #71717a;
-      --text-subtle: #a1a1aa;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --accent-soft: #eef2ff;
-      --ok: #10b981;
-      --ok-soft: #ecfdf5;
-      --warn: #f59e0b;
-      --warn-soft: #fffbeb;
-      --danger: #ef4444;
-      --danger-soft: #fef2f2;
-      --info: #0ea5e9;
-      --info-soft: #f0f9ff;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,.06);
-      --shadow-lg: 0 20px 40px rgba(0,0,0,.12);
-      --radius: 8px;
-      --radius-lg: 12px;
-      --radius-sm: 6px;
-      --font: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'IBM Plex Sans KR', sans-serif;
-      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0a0a0b;
-        --surface: #141416;
-        --surface-2: #1c1c1f;
-        --surface-3: #2a2a2e;
-        --border: #27272a;
-        --border-strong: #3f3f46;
-        --text: #fafafa;
-        --text-muted: #a1a1aa;
-        --text-subtle: #71717a;
-        --accent: #818cf8;
-        --accent-hover: #a5b4fc;
-        --accent-soft: rgba(129,140,248,.12);
-        --ok-soft: rgba(16,185,129,.12);
-        --warn-soft: rgba(245,158,11,.12);
-        --danger-soft: rgba(239,68,68,.12);
-        --info-soft: rgba(14,165,233,.12);
-        --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
-        --shadow-md: 0 4px 12px rgba(0,0,0,.4);
-        --shadow-lg: 0 20px 40px rgba(0,0,0,.5);
-      }
-    }
+/**
+ * ================================================================
+ * 텀블벅 트래커 - 시트 초기화 스크립트
+ * ================================================================
+ * 
+ * 사용법:
+ *   1. Apps Script 편집기에서 이 파일 내용을 Code.gs 맨 아래에 붙여넣기
+ *      (또는 별도 파일로 추가해도 OK)
+ *   2. 저장 후 상단 함수 드롭다운에서 실행하고 싶은 함수 선택
+ *   3. ▶ 실행 버튼 클릭
+ *   4. 권한 요청이 뜨면 허용
+ * 
+ * 포함된 함수:
+ *   - resetAllSheets()          : 모든 시트 삭제 후 새로 생성 (⚠️ 데이터 날아감!)
+ *   - forceCreateHeaders()      : 기존 데이터 유지하고 헤더만 강제로 재생성
+ *   - forceCreateCategorySheet(): categories 시트 강제 생성
+ *   - checkSheetStatus()        : 현재 시트 상태 점검 (읽기 전용)
+ */
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
-    body {
-      font-family: var(--font);
-      font-feature-settings: 'cv11', 'ss01';
-      color: var(--text);
-      background: var(--bg);
-      min-height: 100vh;
-      line-height: 1.5;
-      font-size: 14px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    .grain { display: none; }
-
-    /* Setup screen */
-    .setup-screen { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
-    .setup-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 40px;
-      max-width: 520px;
-      width: 100%;
-      box-shadow: var(--shadow-lg);
-    }
-    .setup-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
-    .setup-box .sub { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
-    .setup-box ol { padding-left: 20px; line-height: 1.7; color: var(--text-muted); margin-bottom: 20px; font-size: 13px; }
-    .setup-box ol b { color: var(--text); }
-    .setup-box input {
-      width: 100%;
-      margin-bottom: 12px;
-      font-size: 13px;
-      font-family: var(--font-mono);
-    }
-    .setup-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
-
-    /* Header */
-    .header {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(250,250,250,.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-    @media (prefers-color-scheme: dark) {
-      .header { background: rgba(10,10,11,.85); }
-    }
-    .header-inner {
-      max-width: 1280px; margin: 0 auto;
-      padding: 14px 24px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 24px; flex-wrap: wrap;
-    }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand-mark {
-      width: 32px; height: 32px;
-      display: grid; place-items: center;
-      background: var(--text); color: var(--surface);
-      font-size: 14px; font-weight: 700;
-      border-radius: var(--radius-sm);
-    }
-    .brand-text h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
-    .brand-text .tagline { font-size: 11px; color: var(--text-subtle); margin-top: 1px; }
-    .tabs { display: flex; gap: 2px; background: var(--surface-2); padding: 3px; border-radius: var(--radius-sm); }
-    .tab {
-      background: transparent; border: none; cursor: pointer;
-      font: inherit; font-size: 13px; font-weight: 500;
-      color: var(--text-muted);
-      padding: 6px 14px;
-      border-radius: calc(var(--radius-sm) - 2px);
-      transition: all .15s;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active {
-      background: var(--surface);
-      color: var(--text);
-      box-shadow: var(--shadow-sm);
-    }
-    .sync-indicator {
-      font-size: 12px; color: var(--text-muted);
-      display: flex; align-items: center; gap: 6px;
-      cursor: pointer; padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      transition: background .15s;
-    }
-    .sync-indicator:hover { background: var(--surface-2); }
-    .sync-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--ok);
-    }
-    .sync-dot.syncing { background: var(--warn); animation: pulse 1s infinite; }
-    .sync-dot.error { background: var(--danger); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
-
-    .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
-    .loading-bar {
-      position: fixed; top: 0; left: 0; right: 0; height: 2px;
-      background: var(--accent); z-index: 100;
-      transform: scaleX(0); transform-origin: left;
-      transition: transform .3s;
-    }
-    .loading-bar.active { transform: scaleX(.7); }
-
-    /* Summary cards */
-    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .summary-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      transition: border-color .15s;
-    }
-    .summary-card:hover { border-color: var(--border-strong); }
-    .summary-card.accent {
-      background: var(--accent-soft);
-      border-color: transparent;
-    }
-    .summary-label {
-      display: block;
-      font-size: 11px; font-weight: 500;
-      color: var(--text-muted);
-      letter-spacing: .02em;
-      margin-bottom: 6px;
-    }
-    .summary-value {
-      font-size: 24px; font-weight: 700;
-      color: var(--text);
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
-    }
-    .summary-value small { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 3px; }
-
-    .view { display: none; }
-    .view.active { display: block; }
-
-    /* Toolbar */
-    .toolbar { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .toolbar-left, .toolbar-right { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 7px 12px;
-      font: inherit; font-size: 13px; font-weight: 500;
-      color: var(--text);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all .12s;
-      white-space: nowrap;
-    }
-    .btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
-    .btn:active { transform: translateY(1px); }
-    .btn-primary {
-      background: var(--text); color: var(--surface);
-      border-color: var(--text);
-    }
-    .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: white; }
-    .btn-danger { color: var(--danger); border-color: transparent; background: transparent; }
-    .btn-danger:hover { background: var(--danger-soft); border-color: transparent; }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
-
-    /* Form elements */
-    input[type="text"], input[type="number"], input[type="url"], input[type="date"],
-    input[type="search"], select, textarea {
-      font: inherit; font-size: 13px;
-      padding: 7px 11px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: var(--text);
-      transition: border-color .12s, box-shadow .12s;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-    textarea { resize: vertical; font-family: var(--font); }
-    input[type="search"] { min-width: 200px; }
-    select { cursor: pointer; padding-right: 28px; }
-
-    /* Projects list */
-    .projects { display: flex; flex-direction: column; gap: 4px; }
-    .project {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      display: grid;
-      grid-template-columns: auto auto 1fr 90px 90px 150px;
-      align-items: center;
-      gap: 12px;
-      transition: all .12s;
-      cursor: pointer;
-    }
-    .status-cell {
-      display: flex;
-      justify-content: flex-end;
-    }
-    .project .project-link-cell {
-      display: flex; align-items: center; justify-content: flex-end;
-    }
-    .project .project-link-btn {
-      font-size: 11px;
-      color: var(--accent);
-      white-space: nowrap;
-      padding: 4px 10px;
-      background: var(--accent-soft);
-      border-radius: 4px;
-      text-decoration: none;
-      font-weight: 500;
-      transition: all .12s;
-    }
-    .project .project-link-btn:hover {
-      background: var(--accent);
-      color: white;
-    }
-    .project:hover {
-      border-color: var(--border-strong);
-      background: var(--surface-2);
-    }
-    /* 수령 완료 항목 - 은은한 초록 배경 */
-    .project.is-done {
-      background: var(--ok-soft);
-      border-color: rgba(16,185,129,.2);
-    }
-    .project.is-done:hover {
-      background: var(--ok-soft);
-      border-color: rgba(16,185,129,.4);
-    }
-    .project.is-done .title { color: var(--text-muted); }
-    .project.is-done .amount { color: var(--text-muted); }
-    .project .check {
-      width: 18px; height: 18px;
-      border: 1.5px solid var(--border-strong);
-      border-radius: 4px;
-      display: grid; place-items: center;
-      cursor: pointer;
-      background: var(--surface);
-      transition: all .12s;
-      flex-shrink: 0;
-    }
-    .project .check:hover { border-color: var(--ok); }
-    .project .check.done { background: var(--ok); border-color: var(--ok); }
-    .project .check.done::after { content: '✓'; font-size: 11px; font-weight: 700; color: white; }
-
-    .project .info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-    .project .title-row {
-      display: flex; align-items: center; gap: 6px; min-width: 0;
-    }
-    .project .title {
-      font-size: 14px; font-weight: 500;
-      color: var(--text);
-      line-height: 1.3;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      min-width: 0; flex: 0 1 auto;
-    }
-    .project .edit-btn-inline {
-      background: transparent; border: none; cursor: pointer;
-      width: 24px; height: 24px;
-      display: grid; place-items: center;
-      color: var(--text-subtle);
-      border-radius: 4px;
-      font-size: 12px;
-      opacity: 0;
-      transition: all .12s;
-      flex-shrink: 0;
-    }
-    .project:hover .edit-btn-inline { opacity: 1; }
-    .project .edit-btn-inline:hover { background: var(--accent-soft); color: var(--accent); opacity: 1; }
-    .project .link-btn-inline {
-      background: transparent; border: none; cursor: pointer;
-      width: 24px; height: 24px;
-      display: grid; place-items: center;
-      color: var(--text-subtle);
-      border-radius: 4px;
-      font-size: 11px;
-      text-decoration: none;
-      opacity: 0;
-      transition: all .12s;
-      flex-shrink: 0;
-    }
-    .project:hover .link-btn-inline { opacity: 1; }
-    .project .link-btn-inline:hover { background: var(--surface-3); color: var(--text); opacity: 1; }
-
-    .project .meta {
-      font-size: 11px; color: var(--text-muted);
-      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-    }
-    .project .meta > * { white-space: nowrap; }
-    .project .category-tag-wrap { display: inline-flex; }
-    .project .category-tag {
-      display: inline-block;
-      padding: 1px 7px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      font: inherit;
-      font-size: 10px; font-weight: 500;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all .12s;
-    }
-    .project .category-tag:hover {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .project .category-tag.empty {
-      border-style: dashed;
-      color: var(--text-subtle);
-      opacity: 0;
-    }
-    .project:hover .category-tag.empty { opacity: 1; }
-
-    /* Category picker dropdown */
-    .category-picker {
-      position: absolute;
-      z-index: 50;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-lg);
-      min-width: 180px;
-      max-height: 320px;
-      display: flex; flex-direction: column;
-      animation: rise .15s;
-      overflow: hidden;
-    }
-    .picker-list {
-      max-height: 240px;
-      overflow-y: auto;
-      padding: 4px;
-    }
-    .picker-item {
-      display: block; width: 100%;
-      text-align: left;
-      padding: 7px 10px;
-      font: inherit; font-size: 13px;
-      color: var(--text);
-      background: transparent;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background .1s;
-    }
-    .picker-item:hover { background: var(--surface-2); }
-    .picker-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-    .picker-add {
-      display: flex; gap: 4px;
-      padding: 8px;
-      border-top: 1px solid var(--border);
-      background: var(--surface-2);
-    }
-    .picker-add input {
-      flex: 1;
-      font-size: 12px;
-      padding: 6px 8px;
-    }
-    .picker-add .btn {
-      font-size: 12px;
-      padding: 6px 10px;
-    }
-    .project .amount {
-      font-size: 14px; font-weight: 600;
-      color: var(--text);
-      text-align: right;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.01em;
-      justify-self: end;
-    }
-    .project .date-info {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
-      font-size: 11px; color: var(--text-muted);
-      text-align: right;
-    }
-    .project .date-line {
-      display: flex; align-items: center; gap: 6px;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      justify-content: flex-end;
-      width: 100%;
-    }
-    .project .date-line.muted { color: var(--text-subtle); }
-    .project .date-label {
-      font-size: 10px;
-      color: var(--text-subtle);
-      font-weight: 500;
-      min-width: 24px;
-      text-align: left;
-    }
-    .project .date-value {
-      color: var(--text);
-      font-weight: 500;
-      font-size: 11px;
-    }
-    .project .date-info.urgent .date-value { color: var(--warn); }
-    .project .dday { font-size: 10px; color: var(--text-subtle); font-weight: 500; }
-    .project .dday.urgent { color: var(--warn); font-weight: 600; }
-
-    .reward-line {
-      font-size: 12px;
-      color: var(--text);
-      padding: 3px 10px;
-      background: var(--accent-soft);
-      border-radius: 4px;
-      display: inline-block;
-      margin-top: 3px;
-      max-width: fit-content;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-      font-weight: 500;
-    }
-
-    .status {
-      display: inline-block;
-      padding: 2px 8px;
-      font-size: 10px; font-weight: 600;
-      border-radius: 3px;
-      letter-spacing: .02em;
-      white-space: nowrap;
-      width: auto;
-      flex: 0 0 auto;
-    }
-    .status-pending { background: var(--info-soft); color: var(--info); }
-    .status-paid { background: var(--ok-soft); color: var(--ok); }
-    .status-cancelled { background: var(--surface-2); color: var(--text-subtle); }
-    .status-failed { background: var(--danger-soft); color: var(--danger); }
-
-    .stale-badge {
-      display: inline-block;
-      padding: 1px 5px;
-      background: var(--warn-soft);
-      color: var(--warn);
-      border-radius: 3px;
-      font-size: 9px; font-weight: 600;
-      letter-spacing: -0.01em;
-    }
-    .downloaded-at {
-      font-size: 10px; color: var(--ok);
-      font-weight: 500;
-    }
-    .quick-done-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 1px 7px;
-      font: inherit; font-size: 10px; font-weight: 500;
-      cursor: pointer;
-      color: var(--text-muted);
-      transition: all .12s;
-    }
-    .quick-done-btn:hover {
-      background: var(--ok); color: white; border-color: var(--ok);
-    }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center;
-      padding: 60px 24px;
-      background: var(--surface);
-      border: 1px dashed var(--border);
-      border-radius: var(--radius-lg);
-    }
-    .empty-icon {
-      font-size: 28px; color: var(--text-subtle);
-      margin-bottom: 12px;
-    }
-    .empty-state h2 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-    .empty-state p { color: var(--text-muted); margin-bottom: 20px; font-size: 13px; }
-    .empty-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-
-    /* Modal */
-    .modal { display: none; position: fixed; inset: 0; z-index: 100; }
-    .modal.open { display: block; }
-    .modal-backdrop {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,.4);
-      backdrop-filter: blur(4px);
-      animation: fade .15s;
-    }
-    @keyframes fade { from { opacity: 0; } }
-    @keyframes rise { from { opacity: 0; transform: translate(-50%, -48%); } }
-    .modal-panel {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: min(90vw, 600px);
-      max-height: 88vh;
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      display: flex; flex-direction: column;
-      animation: rise .2s;
-      overflow: hidden;
-    }
-    .modal-head {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .modal-head h2 { font-size: 16px; font-weight: 600; }
-    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-    .modal-foot {
-      padding: 12px 20px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 6px; justify-content: flex-end;
-      background: var(--surface-2);
-    }
-    .modal-foot .spacer { flex: 1; }
-
-    .icon-btn {
-      background: transparent; border: none; cursor: pointer;
-      width: 28px; height: 28px;
-      display: grid; place-items: center;
-      color: var(--text-muted);
-      border-radius: var(--radius-sm);
-      transition: all .12s;
-      font-size: 14px;
-    }
-    .icon-btn:hover { background: var(--surface-2); color: var(--text); }
-
-    /* Forms */
-    .form { display: flex; flex-direction: column; gap: 12px; }
-    .form label {
-      display: flex; flex-direction: column; gap: 5px;
-      font-size: 12px; font-weight: 500;
-      color: var(--text-muted);
-    }
-    .form label em { color: var(--danger); font-style: normal; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .checkbox-row {
-      padding: 12px;
-      background: var(--surface-2);
-      border-radius: var(--radius-sm);
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .checkbox {
-      display: flex !important; flex-direction: row !important;
-      align-items: center; gap: 8px !important;
-      cursor: pointer;
-      font-weight: 500 !important; color: var(--text) !important;
-      font-size: 13px !important;
-    }
-    .checkbox input { width: 16px; height: 16px; accent-color: var(--accent); }
-
-    .info-box {
-      background: var(--info-soft);
-      border-left: 3px solid var(--info);
-      padding: 12px 14px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 14px;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .info-box strong { display: block; color: var(--text); margin-bottom: 6px; font-size: 13px; }
-    .info-box ol { padding-left: 18px; line-height: 1.6; }
-    .info-box .tip { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11px; }
-
-    #paste-area {
-      width: 100%;
-      min-height: 160px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-    }
-    .parse-preview:empty { display: none; }
-    .parse-preview { margin-top: 14px; }
-    .parse-preview h4 { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
-    .preview-item {
-      padding: 8px 10px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      margin-bottom: 4px;
-      display: grid; grid-template-columns: 1fr auto;
-      gap: 8px; font-size: 12px;
-    }
-    .preview-item .t { font-weight: 500; }
-    .preview-item .a { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
-    .preview-item.dup { opacity: .4; }
-    .preview-item.dup::after { content: '중복'; font-size: 10px; color: var(--text-subtle); }
-
-    /* Timeline */
-    .calendar-header { margin-bottom: 20px; }
-    .calendar-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.02em; }
-    .muted { color: var(--text-muted); font-size: 12px; }
-    .timeline { display: flex; flex-direction: column; gap: 4px; }
-    .timeline-group {
-      display: grid; grid-template-columns: 120px 1fr;
-      gap: 20px; padding: 14px 0;
-      border-top: 1px solid var(--border);
-    }
-    .timeline-date { display: flex; flex-direction: column; gap: 2px; }
-    .timeline-date .day {
-      font-size: 28px; font-weight: 700;
-      line-height: 1; letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
-    }
-    .timeline-date .month { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .timeline-date .dday { font-size: 11px; color: var(--accent); margin-top: 4px; font-weight: 600; }
-    .timeline-items { display: flex; flex-direction: column; gap: 4px; }
-    .timeline-total {
-      text-align: right;
-      padding: 6px 10px 0;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .timeline-total b {
-      color: var(--text); font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .stats-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-    }
-    .stats-card.big { grid-column: span 2; }
-    .stats-card h3 {
-      font-size: 13px; font-weight: 600;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .chart { min-height: 100px; }
-    .bar-row {
-      display: grid;
-      grid-template-columns: 110px 1fr auto;
-      gap: 10px;
-      align-items: center;
-      padding: 6px 0;
-      font-size: 12px;
-    }
-    .bar-row .bar-label {
-      color: var(--text-muted); font-weight: 500;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .bar-row .bar-track {
-      height: 14px;
-      background: var(--surface-2);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .bar-row .bar-fill {
-      height: 100%;
-      background: var(--text);
-      transition: width .4s cubic-bezier(.4,0,.2,1);
-    }
-    .bar-row:nth-child(even) .bar-fill { background: var(--accent); }
-    .bar-row .bar-value {
-      font-weight: 600; font-size: 12px;
-      min-width: 72px; text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed; bottom: 20px; left: 50%;
-      transform: translateX(-50%);
-      background: var(--text); color: var(--surface);
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 500;
-      box-shadow: var(--shadow-lg);
-      z-index: 200;
-      animation: toast-in .25s;
-      max-width: 90vw; text-align: center;
-    }
-    @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
-
-    /* Bulk select mode */
-    .bulk-bar {
-      display: none;
-      background: var(--text); color: var(--surface);
-      padding: 10px 14px; margin-bottom: 10px;
-      border-radius: var(--radius);
-      align-items: center; justify-content: space-between;
-      gap: 12px; flex-wrap: wrap;
-      box-shadow: var(--shadow-md);
-    }
-    .bulk-bar.active { display: flex; }
-    .bulk-bar .checkbox span { color: var(--surface); font-weight: 500; }
-    .bulk-bar .bulk-left { display: flex; align-items: center; gap: 16px; }
-    .bulk-bar .bulk-right { display: flex; gap: 6px; flex-wrap: wrap; }
-    .bulk-bar .selected-count { color: var(--text-subtle); font-size: 12px; }
-    .bulk-bar .selected-count b {
-      color: var(--surface); font-weight: 700;
-      font-size: 14px; margin-right: 3px;
-      font-variant-numeric: tabular-nums;
-    }
-    .bulk-bar .btn {
-      background: rgba(255,255,255,.1);
-      color: var(--surface);
-      border-color: rgba(255,255,255,.15);
-      font-size: 12px; padding: 6px 10px;
-    }
-    .bulk-bar .btn:hover {
-      background: rgba(255,255,255,.2);
-      border-color: rgba(255,255,255,.3);
-    }
-    .bulk-bar .btn-danger {
-      background: var(--danger);
-      border-color: var(--danger);
-      color: var(--surface);
-    }
-    .bulk-bar .btn-danger:hover { background: #dc2626; }
-    .bulk-bar select.btn option { background: var(--surface); color: var(--text); }
-
-    .select-box {
-      width: 18px; height: 18px;
-      border: 1.5px solid var(--border-strong);
-      border-radius: 4px;
-      display: none;
-      place-items: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      background: var(--surface);
-    }
-    .select-box.checked { background: var(--accent); border-color: var(--accent); }
-    .select-box.checked::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
-    body.select-mode .select-box { display: grid; }
-    body.select-mode .project.selected {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-    }
-    body.select-mode .project .check { display: none; }
-    body.select-mode .project .edit-btn-inline,
-    body.select-mode .project .link-btn-inline { display: none; }
-
-    /* Responsive */
-    @media (max-width: 720px) {
-      .header-inner { padding: 12px 16px; }
-      .main { padding: 16px; }
-      .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .summary-card { padding: 12px 14px; }
-      .summary-value { font-size: 20px; }
-      .project {
-        grid-template-columns: auto auto 1fr auto;
-        gap: 10px;
-        padding: 10px 12px;
-      }
-      .status-cell {
-        grid-column: 2 / 4;
-        grid-row: 2;
-        justify-content: flex-start;
-      }
-      .project .date-info {
-        grid-column: 2 / -1;
-        grid-row: 3;
-        align-items: flex-start;
-        flex-direction: row;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-      .project .amount { grid-column: 4; grid-row: 1; }
-      .project .edit-btn-inline, .project .link-btn-inline { opacity: 1; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .stats-card.big { grid-column: span 1; }
-      .form-row { grid-template-columns: 1fr; }
-      .toolbar { flex-direction: column; align-items: stretch; }
-      .toolbar-left, .toolbar-right { flex-wrap: wrap; }
-      input[type="search"] { min-width: 0; width: 100%; }
-      .timeline-group { grid-template-columns: 1fr; gap: 10px; }
-      .tabs { order: 3; width: 100%; }
-      .bulk-bar { flex-direction: column; align-items: stretch; gap: 8px; }
-      .bulk-bar .bulk-left, .bulk-bar .bulk-right { justify-content: center; }
-    }
-  </style>
-</head>
-<body>
-  <div class="grain"></div>
-  <div class="loading-bar" id="loading-bar"></div>
-
-  <!-- 최초 API URL 설정 화면 -->
-  <div class="setup-screen" id="setup-screen" style="display:none;">
-    <div class="setup-box">
-      <h1>✦ 텀블벅 트래커</h1>
-      <p class="sub">Apps Script API 주소를 먼저 연결해주세요.</p>
-      <ol>
-        <li>구글 시트에서 <b>확장 → Apps Script</b> 열기</li>
-        <li><b>배포 → 새 배포 → 웹 앱</b>으로 배포</li>
-        <li>"다음 사용자로 실행"은 <b>나</b>, "액세스 권한"은 <b>모든 사용자</b>로 설정</li>
-        <li>나오는 웹앱 URL을 아래에 붙여넣기</li>
-      </ol>
-      <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec" />
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-save-url">연결하기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 메인 앱 -->
-  <div id="app" style="display:none;">
-    <header class="header">
-      <div class="header-inner">
-        <div class="brand">
-          <div class="brand-mark">TB</div>
-          <div class="brand-text">
-            <h1>텀블벅 트래커</h1>
-            <p class="tagline">구글 시트 연동</p>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-          <nav class="tabs">
-            <button class="tab active" data-view="list">후원 목록</button>
-            <button class="tab" data-view="calendar">결제 일정</button>
-            <button class="tab" data-view="stats">통계</button>
-          </nav>
-          <div class="sync-indicator" id="sync-indicator" title="클릭해서 API 주소 변경">
-            <span class="sync-dot" id="sync-dot"></span>
-            <span id="sync-text">동기화됨</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main class="main">
-      <section class="summary">
-        <div class="summary-card"><span class="summary-label">총 후원</span><span class="summary-value" id="stat-total-count">—</span></div>
-        <div class="summary-card accent"><span class="summary-label">총 금액</span><span class="summary-value" id="stat-total-amount">—</span></div>
-        <div class="summary-card"><span class="summary-label">결제 예정</span><span class="summary-value" id="stat-pending">—</span></div>
-        <div class="summary-card"><span class="summary-label">수령 대기</span><span class="summary-value" id="stat-waiting">—</span></div>
-      </section>
-
-      <section class="view view-list active" id="view-list">
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <button class="btn btn-primary" id="btn-paste">붙여넣기로 추가</button>
-            <button class="btn" id="btn-manual">직접 입력</button>
-            <button class="btn" id="btn-select-mode">☐ 선택</button>
-            <button class="btn" id="btn-reload" title="시트 새로고침">↻</button>
-          </div>
-          <div class="toolbar-right">
-            <input type="search" id="search-input" placeholder="프로젝트 검색..." />
-            <select id="filter-status">
-              <option value="all">전체 상태</option>
-              <option value="pending">결제 예정</option>
-              <option value="paid">결제 완료</option>
-              <option value="cancelled">무산/취소</option>
-              <option value="failed">결제 실패</option>
-            </select>
-            <select id="filter-category">
-              <option value="all">전체 카테고리</option>
-            </select>
-            <select id="filter-received">
-              <option value="all">전체 수령</option>
-              <option value="not-received">📦 미수령만</option>
-              <option value="received">✓ 수령 완료만</option>
-            </select>
-            <select id="sort-by">
-              <option value="recent">최근 추가순</option>
-              <option value="date-desc">후원일 최신순</option>
-              <option value="date-asc">후원일 오래된순</option>
-              <option value="amount-desc">금액 높은순</option>
-              <option value="amount-asc">금액 낮은순</option>
-              <option value="title">제목순</option>
-            </select>
-            <button class="btn" id="btn-csv" title="현재 보기를 CSV로 내보내기">CSV</button>
-          </div>
-        </div>
-
-        <!-- 선택 모드 전용 액션 바 -->
-        <div class="bulk-bar" id="bulk-bar">
-          <div class="bulk-left">
-            <label class="checkbox"><input type="checkbox" id="select-all" /><span>전체 선택</span></label>
-            <span class="selected-count"><b id="selected-n">0</b>개 선택됨</span>
-          </div>
-          <div class="bulk-right">
-            <button class="btn" id="btn-bulk-download">✓ 수령 완료 처리</button>
-            <select id="bulk-status-select" class="btn">
-              <option value="">상태 일괄 변경...</option>
-              <option value="pending">→ 결제 예정</option>
-              <option value="paid">→ 결제 완료</option>
-              <option value="cancelled">→ 무산/취소</option>
-              <option value="failed">→ 결제 실패</option>
-            </select>
-            <select id="bulk-category-select" class="btn"></select>
-            <button class="btn btn-danger" id="btn-bulk-delete">🗑 삭제</button>
-            <button class="btn" id="btn-select-cancel">취소</button>
-          </div>
-        </div>
-        <div class="projects" id="projects-list"></div>
-      </section>
-
-      <section class="view view-calendar" id="view-calendar">
-        <div class="calendar-header">
-          <h2>다가오는 결제</h2>
-          <p class="muted">텀블벅은 프로젝트 종료일 다음 날부터 7일간 결제가 진행돼요.</p>
-        </div>
-        <div class="timeline" id="timeline"></div>
-      </section>
-
-      <section class="view view-stats" id="view-stats">
-        <div class="stats-grid">
-          <div class="stats-card big"><h3>카테고리별 지출</h3><div id="chart-category" class="chart"></div></div>
-          <div class="stats-card"><h3>월별 결제 금액</h3><div id="chart-monthly" class="chart"></div></div>
-          <div class="stats-card"><h3>상태별 분포</h3><div id="chart-status" class="chart"></div></div>
-          <div class="stats-card"><h3>수령 현황</h3><div id="chart-download" class="chart"></div></div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- 붙여넣기 모달 -->
-  <div class="modal" id="modal-paste">
-    <div class="modal-backdrop" data-close></div>
-    <div class="modal-panel">
-      <header class="modal-head">
-        <h2>텀블벅 페이지에서 붙여넣기</h2>
-        <button class="icon-btn" data-close>✕</button>
-      </header>
-      <div class="modal-body">
-        <div class="info-box">
-          <strong>사용 방법</strong>
-          <ol>
-            <li>텀블벅 로그인 → 프로필 → <b>후원 현황(후원한 프로젝트)</b> 열기</li>
-            <li>후원 목록 영역을 드래그해서 복사</li>
-            <li>아래 칸에 붙여넣기 → <b>분석하기</b></li>
-          </ol>
-          <p class="tip">💡 한 번에 안 되면 프로젝트별로 나눠 여러 번 붙여넣어도 돼요. 중복은 자동으로 걸러집니다.</p>
-        </div>
-        <textarea id="paste-area" placeholder="여기에 후원 현황 페이지 내용을 붙여넣으세요..."></textarea>
-        <div class="parse-preview" id="parse-preview"></div>
-      </div>
-      <footer class="modal-foot">
-        <button class="btn" data-close>취소</button>
-        <button class="btn btn-primary" id="btn-parse">분석하기</button>
-        <button class="btn btn-primary" id="btn-import" disabled>시트에 저장 (<span id="import-count">0</span>건)</button>
-      </footer>
-    </div>
-  </div>
-
-  <!-- 편집 모달 -->
-  <div class="modal" id="modal-edit">
-    <div class="modal-backdrop" data-close></div>
-    <div class="modal-panel">
-      <header class="modal-head">
-        <h2 id="edit-title">후원 추가</h2>
-        <button class="icon-btn" data-close>✕</button>
-      </header>
-      <div class="modal-body">
-        <form id="edit-form" class="form" onsubmit="return false;">
-          <label><span>프로젝트 제목 <em>*</em></span><input type="text" name="title" required /></label>
-          <label><span>선물 옵션 (무엇을 샀는지)</span><input type="text" name="reward" placeholder="예: [얼리버드] 풀세트" /></label>
-          <label><span>창작자</span><input type="text" name="creator" /></label>
-          <div class="form-row">
-            <label><span>후원 금액 (원) <em>*</em></span><input type="number" name="amount" min="0" step="1000" required /></label>
-            <label><span>카테고리</span>
-              <select name="category" id="edit-category-select"></select>
-            </label>
-          </div>
-          <div class="form-row">
-            <label><span>후원한 날짜</span><input type="date" name="paymentDate" /></label>
-            <label><span>선물 전달 예정일</span><input type="date" name="deliveryDate" /></label>
-          </div>
-          <label><span>상태</span>
-            <select name="status">
-              <option value="pending">결제 예정</option>
-              <option value="paid">결제 완료</option>
-              <option value="cancelled">무산/취소</option>
-              <option value="failed">결제 실패</option>
-            </select>
-          </label>
-          <div class="checkbox-row">
-            <label class="checkbox"><input type="checkbox" name="downloaded" /><span>다운로드 / 수령 완료</span></label>
-            <label style="flex-direction: row; align-items: center; gap: 10px; margin-top: 10px;">
-              <span style="min-width: 80px;">완료일</span>
-              <input type="date" name="downloadedAt" style="flex: 1;" />
-              <button type="button" class="btn" id="btn-today" style="padding: 6px 10px; font-size: 12px;">오늘</button>
-            </label>
-          </div>
-          <label><span>프로젝트 URL</span><input type="url" name="url" placeholder="https://tumblbug.com/..." /></label>
-          <label><span>메모</span><textarea name="notes" rows="3"></textarea></label>
-        </form>
-      </div>
-      <footer class="modal-foot">
-        <button class="btn btn-danger" id="btn-delete" style="display:none">삭제</button>
-        <div class="spacer"></div>
-        <button class="btn" data-close>취소</button>
-        <button class="btn btn-primary" id="btn-save">저장</button>
-      </footer>
-    </div>
-  </div>
-
-  <script>
-  'use strict';
-
-  // ================= API URL 관리 =================
-  const URL_KEY = 'tumblbug-api-url';
-  function getApiUrl() { return localStorage.getItem(URL_KEY) || ''; }
-  function setApiUrl(url) { localStorage.setItem(URL_KEY, url); }
-  function clearApiUrl() { localStorage.removeItem(URL_KEY); }
-
-  // ================= API 호출 =================
-  // CORS 회피를 위해:
-  //  - GET: 일반 fetch
-  //  - POST: text/plain 으로 보내기 (preflight 회피)
-  async function apiCall(method, body) {
-    const url = getApiUrl();
-    if (!url) throw new Error('API URL이 설정되지 않았어요');
-    setSyncing(true);
-    try {
-      let res;
-      if (method === 'GET') {
-        const queryUrl = body ? url + '?' + new URLSearchParams(body).toString() : url;
-        res = await fetch(queryUrl, { method: 'GET', redirect: 'follow' });
-      } else {
-        res = await fetch(url, {
-          method: 'POST',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(body)
-        });
-      }
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || '알 수 없는 오류');
-      setSyncing(false, true);
-      return data.data;
-    } catch (e) {
-      setSyncing(false, false, e.message);
-      throw e;
-    }
+/**
+ * ⚠️ 모든 시트를 삭제하고 완전히 처음부터 다시 만들기
+ * 기존 데이터는 모두 사라집니다!
+ */
+function resetAllSheets() {
+  const ui = SpreadsheetApp.getUi();
+  const confirm = ui.alert(
+    '⚠️ 전체 초기화',
+    'projects 시트와 categories 시트를 모두 삭제하고 새로 만들어요.\n\n기존 데이터는 전부 사라집니다. 계속할까요?',
+    ui.ButtonSet.YES_NO
+  );
+  if (confirm !== ui.Button.YES) return;
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. 기존 시트 삭제
+  const projectsSheet = ss.getSheetByName('projects');
+  if (projectsSheet) ss.deleteSheet(projectsSheet);
+  
+  const categoriesSheet = ss.getSheetByName('categories');
+  if (categoriesSheet) ss.deleteSheet(categoriesSheet);
+  
+  // 2. 시트가 최소 1개는 있어야 하므로 임시 시트 확인
+  if (ss.getSheets().length === 0) {
+    ss.insertSheet('임시');
   }
-
-  function setSyncing(isSyncing, success = true, errMsg = '') {
-    const dot = document.getElementById('sync-dot');
-    const text = document.getElementById('sync-text');
-    const bar = document.getElementById('loading-bar');
-    if (!dot) return;
-    if (isSyncing) {
-      dot.className = 'sync-dot syncing';
-      text.textContent = '동기화 중...';
-      bar.classList.add('active');
-    } else {
-      bar.classList.remove('active');
-      if (success) {
-        dot.className = 'sync-dot';
-        text.textContent = '시트에 저장됨';
-      } else {
-        dot.className = 'sync-dot error';
-        text.textContent = '오류';
-        console.error(errMsg);
-      }
-    }
-  }
-
-  // ================= 파서 (텀블벅 실제 레이아웃 전용) =================
-  // 텀블벅 "후원한 프로젝트" 페이지 구조:
-  //   상태마커(후원 성공/예약 주문 성공/후원 무산/후원 예약) → cover_image → YYYY. MM. DD 후원
-  //   → 제목 → 선물명(x1) → 금액원 → YYYY. MM. DD 선물 전달 예정/완료 → ...
-  const AMOUNT_RE = /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,})\s*원/;
-  const DATE_RE = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
-  const STATUS_MARKERS = [
-    { re: /^후원\s*성공\s*$/, status: 'paid' },
-    { re: /^예약\s*주문\s*성공\s*$/, status: 'paid' },
-    { re: /^후원\s*예약\s*$/, status: 'pending' },
-    { re: /^결제\s*예정\s*$/, status: 'pending' },
-    { re: /^후원\s*무산\s*$/, status: 'cancelled' },
-    { re: /^펀딩\s*무산\s*$/, status: 'cancelled' },
-    { re: /^프로젝트\s*무산\s*$/, status: 'cancelled' },
-    { re: /^후원\s*취소\s*$/, status: 'cancelled' },
-    { re: /^예약\s*주문\s*취소\s*$/, status: 'cancelled' },
-    { re: /^예약\s*주문\s*중단\s*$/, status: 'cancelled' },
-    { re: /^결제\s*실패\s*$/, status: 'failed' },
-    { re: /^결제\s*최종\s*실패\s*$/, status: 'failed' },
-    { re: /^재결제\s*$/, status: 'failed' },
+  
+  // 3. projects 시트 생성
+  const COLUMNS = [
+    'id', 'title', 'creator', 'amount', 'category',
+    'status', 'paymentDate', 'deliveryDate', 'downloaded', 'downloadedAt',
+    'sharedWith', 'reward', 'url', 'notes', 'createdAt', 'updatedAt'
   ];
-  function detectStatusMarker(line) {
-    const trimmed = line.trim();
-    for (const m of STATUS_MARKERS) if (m.re.test(trimmed)) return m.status;
-    return null;
+  const projects = ss.insertSheet('projects');
+  projects.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  projects.getRange(1, 1, 1, COLUMNS.length)
+    .setFontWeight('bold')
+    .setBackground('#1f1a14')
+    .setFontColor('#fbf7ee');
+  projects.setFrozenRows(1);
+  projects.setColumnWidth(1, 260);   // id
+  projects.setColumnWidth(2, 260);   // title
+  projects.setColumnWidth(3, 140);   // creator
+  projects.setColumnWidth(4, 100);   // amount
+  projects.setColumnWidth(5, 100);   // category
+  projects.setColumnWidth(6, 100);   // status
+  projects.setColumnWidth(7, 110);   // paymentDate
+  projects.setColumnWidth(8, 110);   // deliveryDate
+  projects.setColumnWidth(9, 90);    // downloaded
+  projects.setColumnWidth(10, 110);  // downloadedAt
+  projects.setColumnWidth(11, 160);  // sharedWith
+  projects.setColumnWidth(12, 220);  // reward
+  projects.setColumnWidth(13, 220);  // url
+  projects.setColumnWidth(14, 240);  // notes
+  projects.setColumnWidth(15, 180);  // createdAt
+  projects.setColumnWidth(16, 180);  // updatedAt
+  
+  // 4. categories 시트 생성
+  const categories = ss.insertSheet('categories');
+  categories.getRange(1, 1).setValue('name')
+    .setFontWeight('bold')
+    .setBackground('#1f1a14')
+    .setFontColor('#fbf7ee');
+  categories.setFrozenRows(1);
+  categories.setColumnWidth(1, 240);
+  
+  // 5. 임시 시트 있으면 삭제
+  const tempSheet = ss.getSheetByName('임시');
+  if (tempSheet && ss.getSheets().length > 1) {
+    ss.deleteSheet(tempSheet);
   }
-  function parseTumblbugDate(text) {
-    const m = text.match(DATE_RE);
-    if (!m) return '';
-    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  
+  ui.alert('✅ 초기화 완료', 'projects 시트와 categories 시트가 새로 만들어졌어요.\n이제 앱에서 새로 데이터를 넣을 수 있습니다.', ui.ButtonSet.OK);
+}
+
+/**
+ * 기존 데이터를 유지한 채 헤더만 강제로 다시 쓰기
+ * 헤더가 깨졌거나 컬럼 순서가 엉켰을 때 사용
+ * ※ 데이터 행(2행부터)은 건드리지 않음
+ */
+function forceCreateHeaders() {
+  const COLUMNS = [
+    'id', 'title', 'creator', 'amount', 'category',
+    'status', 'paymentDate', 'deliveryDate', 'downloaded', 'downloadedAt',
+    'sharedWith', 'reward', 'url', 'notes', 'createdAt', 'updatedAt'
+  ];
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('projects');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('projects');
   }
-  function parseTumblbugText(text) {
-    if (!text || !text.trim()) return [];
-    const lines = text.replace(/\r\n/g, '\n').split('\n').map(l => l.trim());
-
-    // 상태 마커를 기준으로 블록 분리
-    const blocks = [];
-    let current = null;
-    for (const line of lines) {
-      const status = detectStatusMarker(line);
-      if (status) {
-        if (current) blocks.push(current);
-        current = { status, lines: [] };
-      } else if (current) {
-        current.lines.push(line);
-      }
-    }
-    if (current) blocks.push(current);
-
-    const results = [];
-    const seen = new Set();
-    for (const block of blocks) {
-      const parsed = parseTumblbugBlock(block);
-      if (!parsed) continue;
-      const key = `${parsed.title}::${parsed.amount}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      results.push(parsed);
-    }
-    return results;
+  
+  // 현재 시트에 컬럼 수가 부족하면 늘려주기
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols < COLUMNS.length) {
+    sheet.insertColumnsAfter(currentCols, COLUMNS.length - currentCols);
   }
-  function parseTumblbugBlock(block) {
-    const lines = block.lines.filter(l => l.length > 0);
-    if (lines.length === 0) return null;
-
-    // 금액: 단독 라인 우선, 괄호 안 금액 무시 (예: "(2,000원)")
-    let amount = 0;
-    for (const l of lines) {
-      if (/^[0-9]{1,3}(?:,[0-9]{3})+\s*원\s*$/.test(l) || /^[0-9]{4,}\s*원\s*$/.test(l)) {
-        const m = l.match(AMOUNT_RE);
-        if (m) { amount = parseInt(m[1].replace(/,/g, ''), 10); break; }
-      }
-    }
-    if (amount === 0) {
-      for (const l of lines) {
-        const cleaned = l.replace(/\([^)]*\)/g, '');
-        const m = cleaned.match(AMOUNT_RE);
-        if (m) {
-          const a = parseInt(m[1].replace(/,/g, ''), 10);
-          if (a > amount) amount = a;
-        }
-      }
-    }
-    if (amount === 0) return null;
-
-    // 후원일 (YYYY. MM. DD 후원)
-    let fundingDate = '';
-    for (const l of lines) {
-      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*후원/.test(l)) {
-        fundingDate = parseTumblbugDate(l);
-        break;
-      }
-    }
-    // 선물 전달 예정/완료일 또는 결제 예정일 (후원 예약 상태에서 나타남)
-    let deliveryDate = '';
-    for (const l of lines) {
-      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*선물\s*전달/.test(l)) {
-        deliveryDate = parseTumblbugDate(l);
-        break;
-      }
-      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*결제\s*예정/.test(l)) {
-        deliveryDate = parseTumblbugDate(l);
-        break;
-      }
-    }
-
-    // 노이즈 제거 후 제목/선물 추출
-    const isNoise = (l) => (
-      l === 'cover_image' ||
-      l === '후원 상세' ||
-      l === '창작자 문의' ||
-      l === '후기 작성' ||
-      l === '다운받기' ||
-      l.includes('디지털선물을 전달') ||
-      AMOUNT_RE.test(l) ||
-      /\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*(후원|선물\s*전달|결제\s*예정)/.test(l)
+  
+  // 1행에 헤더 강제 기록
+  sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  sheet.getRange(1, 1, 1, COLUMNS.length)
+    .setFontWeight('bold')
+    .setBackground('#1f1a14')
+    .setFontColor('#fbf7ee');
+  sheet.setFrozenRows(1);
+  
+  // 컬럼 너비
+  sheet.setColumnWidth(1, 260);
+  sheet.setColumnWidth(2, 260);
+  sheet.setColumnWidth(3, 140);
+  sheet.setColumnWidth(4, 100);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 100);
+  sheet.setColumnWidth(7, 110);
+  sheet.setColumnWidth(8, 110);
+  sheet.setColumnWidth(9, 90);
+  sheet.setColumnWidth(10, 110);
+  sheet.setColumnWidth(11, 160);
+  sheet.setColumnWidth(12, 220);
+  sheet.setColumnWidth(13, 220);
+  sheet.setColumnWidth(14, 240);
+  sheet.setColumnWidth(15, 180);
+  sheet.setColumnWidth(16, 180);
+  
+  try {
+    SpreadsheetApp.getUi().alert(
+      '✅ 헤더 생성 완료',
+      'projects 시트 1행에 헤더 16개가 기록되었어요.\n기존 데이터 행은 그대로 유지됩니다.',
+      SpreadsheetApp.getUi().ButtonSet.OK
     );
-    const contentLines = lines.filter(l => !isNoise(l));
-    let title = contentLines[0] || '';
-    let reward = '';
-    if (contentLines.length >= 2 && /\(x\d+\)\s*$/.test(contentLines[1])) {
-      reward = contentLines[1].replace(/\s*\(x\d+\)\s*$/, '').trim();
-    }
+  } catch (e) {}
+}
 
-    return {
-      title: title.slice(0, 200),
-      creator: '',
-      amount,
-      paymentDate: fundingDate,    // 후원일 (결제 기준)
-      deliveryDate,                // 선물 전달 예정/완료일
-      status: block.status,
-      downloaded: false,
-      url: '',
-      category: '',
-      reward: reward || '',        // 선물 옵션 (별도 필드)
-      notes: '',
-    };
+/**
+ * categories 시트만 강제로 생성
+ */
+function forceCreateCategorySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('categories');
+  
+  if (!sheet) {
+    sheet = ss.insertSheet('categories');
   }
+  
+  sheet.getRange(1, 1).setValue('name')
+    .setFontWeight('bold')
+    .setBackground('#1f1a14')
+    .setFontColor('#fbf7ee');
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 240);
+  
+  try {
+    SpreadsheetApp.getUi().alert('✅ categories 시트 준비 완료');
+  } catch (e) {}
+}
 
-  // ================= 유틸 =================
-  const fc = n => (Number(n) || 0).toLocaleString('ko-KR');
-  const fd = ymd => { if (!ymd) return ''; const [y,m,d] = String(ymd).split('-'); return y && m && d ? `${y}.${m}.${d}` : ymd; };
-  const daysUntil = ymd => { if (!ymd) return null; const t = new Date(ymd + 'T00:00:00'); const n = new Date(); n.setHours(0,0,0,0); return Math.floor((t - n) / 86400000); };
-  const ddayLabel = ymd => { const d = daysUntil(ymd); if (d === null) return ''; if (d === 0) return 'D-DAY'; return d > 0 ? `D-${d}` : `D+${Math.abs(d)}`; };
-  const sl = s => ({pending:'결제 예정', paid:'결제 완료', cancelled:'무산/취소', failed:'결제 실패'}[s] || s);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
-
-  // ================= 카테고리 관리 (서버 시트 기반) =================
-  const DEFAULT_CATEGORIES = [
-    '출판', '게임', '만화/웹툰', '음악', '패션/잡화',
-    '디자인', '아트', '테크', '푸드', '영화/영상', '기타'
-  ];
-  // 서버에서 받아온 커스텀 카테고리를 여기에 캐싱
-  let customCategoriesCache = [];
+/**
+ * 현재 시트 상태 점검 (읽기 전용, 아무것도 변경하지 않음)
+ * 로그에 현재 헤더와 행 개수를 출력
+ */
+function checkSheetStatus() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const messages = [];
   
-  async function loadCategories() {
-    try {
-      const list = await apiCall('GET', { action: 'categories' });
-      customCategoriesCache = Array.isArray(list) ? list : [];
-    } catch (e) {
-      console.warn('카테고리 목록을 불러올 수 없음:', e);
-      customCategoriesCache = [];
-    }
-  }
-  
-  function getAllCategories() {
-    // 기본 + 시트의 커스텀 + 시트의 projects에서 사용 중인 것들 (중복 제거)
-    const used = [...new Set(state.projects.map(p => p.category).filter(Boolean))];
-    const all = [...new Set([...DEFAULT_CATEGORIES, ...customCategoriesCache, ...used])];
-    return all;
-  }
-  
-  async function addCustomCategory(name) {
-    name = String(name || '').trim();
-    if (!name) return false;
-    if (name.length > 30) { toast('카테고리는 30자 이내'); return false; }
-    const existing = getAllCategories();
-    if (existing.includes(name)) { toast('이미 있는 카테고리'); return false; }
-    try {
-      const result = await apiCall('POST', { action: 'addCategory', name });
-      if (result && result.added) {
-        customCategoriesCache.push(name);
-        return true;
-      }
-      toast('이미 있는 카테고리');
-      return false;
-    } catch (e) {
-      toast('저장 실패: ' + e.message);
-      return false;
-    }
-  }
-
-  // ================= 상태 =================
-  let state = {
-    projects: [], view: 'list', search: '', filterStatus: 'all',
-    filterReceived: 'all',
-    filterCategory: 'all',
-    sortBy: 'recent', editingId: null, parsedCandidates: [],
-    selectMode: false,
-    selectedIds: new Set(),
-  };
-
-  // ================= 렌더링 =================
-  function renderAll() { renderSummary(); renderList(); renderTimeline(); renderStats(); refreshCategoryFilter(); }
-  
-  function refreshCategoryFilter() {
-    const sel = document.getElementById('filter-category');
-    if (!sel) return;
-    const currentValue = state.filterCategory;
-    const cats = getAllCategories();
-    const hasNoCategory = state.projects.some(p => !p.category);
-    sel.innerHTML = '<option value="all">전체 카테고리</option>' +
-      (hasNoCategory ? '<option value="__none__">(카테고리 없음)</option>' : '') +
-      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    // 현재 선택 값이 목록에 없으면 'all'로 리셋
-    if ([...sel.options].some(o => o.value === currentValue)) {
-      sel.value = currentValue;
-    } else {
-      sel.value = 'all';
-      state.filterCategory = 'all';
-    }
-  }
-  function renderSummary() {
-    const p = state.projects;
-    const totalAmount = p.filter(x => x.status !== 'cancelled').reduce((s, x) => s + (x.amount || 0), 0);
-    document.getElementById('stat-total-count').innerHTML = `${p.length}<small>건</small>`;
-    document.getElementById('stat-total-amount').innerHTML = `${fc(totalAmount)}<small>원</small>`;
-    document.getElementById('stat-pending').innerHTML = `${p.filter(x => x.status === 'pending').length}<small>건</small>`;
-    document.getElementById('stat-waiting').innerHTML = `${p.filter(x => x.status === 'paid' && !x.downloaded).length}<small>건</small>`;
-  }
-  function getFiltered() {
-    let arr = [...state.projects];
-    if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(p => (p.title||'').toLowerCase().includes(q) || (p.creator||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q) || (p.reward||'').toLowerCase().includes(q)); }
-    if (state.filterStatus !== 'all') arr = arr.filter(p => p.status === state.filterStatus);
-    if (state.filterReceived === 'received') arr = arr.filter(p => p.downloaded);
-    else if (state.filterReceived === 'not-received') arr = arr.filter(p => !p.downloaded);
-    if (state.filterCategory !== 'all') {
-      if (state.filterCategory === '__none__') arr = arr.filter(p => !p.category);
-      else arr = arr.filter(p => p.category === state.filterCategory);
-    }
-    const sorters = {
-      'recent': (a, b) => {
-        // createdAt이 있으면 그것으로, 없으면 후원일로 fallback
-        const av = a.createdAt || a.paymentDate || '';
-        const bv = b.createdAt || b.paymentDate || '';
-        return bv.localeCompare(av);
-      },
-      'date-asc': (a, b) => (a.paymentDate || '9999').localeCompare(b.paymentDate || '9999'),
-      'date-desc': (a, b) => (b.paymentDate || '0000').localeCompare(a.paymentDate || '0000'),
-      'amount-desc': (a, b) => b.amount - a.amount,
-      'amount-asc': (a, b) => a.amount - b.amount,
-      'title': (a, b) => a.title.localeCompare(b.title, 'ko'),
-    };
-    arr.sort(sorters[state.sortBy] || sorters['recent']);
-    return arr;
-  }
-  function projectCard(p) {
-    const d = daysUntil(p.paymentDate);
-    const urgent = d !== null && d >= 0 && d <= 7 && p.status === 'pending';
-    const dateText = p.paymentDate ? fd(p.paymentDate) : '-';
-    const ddayText = p.status === 'pending' && p.paymentDate ? ddayLabel(p.paymentDate) : '';
-    const selected = state.selectedIds.has(p.id);
-    
-    const stale = (() => {
-      if (p.status !== 'paid' || p.downloaded) return false;
-      if (!p.paymentDate) return false;
-      const daysAgo = -daysUntil(p.paymentDate);
-      return daysAgo >= 30;
-    })();
-    
-    return `
-      <article class="project ${selected ? 'selected' : ''} ${p.downloaded ? 'is-done' : ''}" data-id="${esc(p.id)}">
-        <div class="select-box ${selected ? 'checked' : ''}"></div>
-        <div class="check ${p.downloaded ? 'done' : ''}" title="수령 완료 표시"></div>
-        <div class="info">
-          <div class="title-row">
-            <span class="title">${esc(p.title || '(제목 없음)')}</span>
-            <button class="edit-btn-inline" title="편집">✎</button>
-          </div>
-          ${p.reward ? `<div class="reward-line">🎁 ${esc(p.reward)}</div>` : ''}
-          <div class="meta">
-            ${p.creator ? `<span>by ${esc(p.creator)}</span>` : ''}
-            <span class="category-tag-wrap" data-id="${esc(p.id)}">
-              <button class="category-tag ${p.category ? '' : 'empty'}" data-action="category-edit">${p.category ? esc(p.category) : '+ 카테고리'}</button>
-            </span>
-            ${p.downloaded && p.downloadedAt ? `<span class="downloaded-at">✓ ${fd(p.downloadedAt)}</span>` : ''}
-            ${p.notes ? `<span title="${esc(p.notes)}">📝</span>` : ''}
-          </div>
-        </div>
-        <div class="status-cell">
-          <span class="status status-${p.status}">${sl(p.status)}</span>
-        </div>
-        <div class="amount">${fc(p.amount)}원</div>
-        <div class="date-info ${urgent ? 'urgent' : ''}">
-          ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span><span class="date-value">${fd(p.paymentDate)}</span></span>` : ''}
-          ${p.deliveryDate ? `<span class="date-line"><span class="date-label">${p.status === 'pending' ? '결제' : '전달'}</span><span class="date-value">${fd(p.deliveryDate)}</span>${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}${stale ? '<span class="stale-badge">30일+</span>' : ''}</span>` : (stale ? `<span class="date-line"><span class="stale-badge">30일+</span></span>` : '')}
-          ${!p.paymentDate && !p.deliveryDate ? '<span class="date-line muted">-</span>' : ''}
-        </div>
-      </article>`;
-  }
-  function bindCardEvents(container) {
-    container.querySelectorAll('.project').forEach(el => {
-      const id = el.dataset.id;
-      const selectBox = el.querySelector('.select-box');
-      if (selectBox) selectBox.addEventListener('click', e => { e.stopPropagation(); toggleSelection(id); });
-      const check = el.querySelector('.check');
-      if (check) check.addEventListener('click', e => { e.stopPropagation(); onToggleDownloaded(id); });
-      const editBtn = el.querySelector('.edit-btn-inline');
-      if (editBtn) editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(id); });
-      const categoryBtn = el.querySelector('[data-action="category-edit"]');
-      if (categoryBtn) categoryBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        openCategoryPicker(id, categoryBtn);
-      });
-      const link = el.querySelector('.project-link-btn');
-      if (link) link.addEventListener('click', e => e.stopPropagation());
-      el.addEventListener('click', () => {
-        if (state.selectMode) toggleSelection(id);
-        else openEditModal(id);
-      });
-    });
-  }
-  function renderList() {
-    const container = document.getElementById('projects-list');
-    if (state.projects.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">◈</div>
-          <h2>아직 기록된 후원이 없어요</h2>
-          <p>텀블벅 <b>내 후원 현황</b> 페이지에서 내역을 복사해 붙여넣거나,<br/>직접 입력해서 추가해보세요.</p>
-          <div class="empty-actions">
-            <button class="btn btn-primary" onclick="document.getElementById('btn-paste').click()">붙여넣기로 시작</button>
-            <button class="btn" onclick="document.getElementById('btn-manual').click()">직접 입력</button>
-          </div>
-        </div>`;
-      return;
-    }
-    const filtered = getFiltered();
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state" style="padding:40px;"><p>검색 조건에 맞는 후원이 없어요.</p></div>`;
-      return;
-    }
-    container.innerHTML = filtered.map(projectCard).join('');
-    bindCardEvents(container);
-  }
-  function renderTimeline() {
-    const container = document.getElementById('timeline');
-    const pending = state.projects.filter(p => p.status === 'pending' && p.paymentDate).sort((a,b) => a.paymentDate.localeCompare(b.paymentDate));
-    if (pending.length === 0) { container.innerHTML = `<div class="empty-state" style="padding:60px 20px;"><div class="empty-icon">✓</div><p>결제 예정인 후원이 없어요.</p></div>`; return; }
-    const groups = {};
-    for (const p of pending) { (groups[p.paymentDate] = groups[p.paymentDate] || []).push(p); }
-    container.innerHTML = Object.entries(groups).map(([date, items]) => {
-      const d = new Date(date + 'T00:00:00');
-      const total = items.reduce((s, x) => s + x.amount, 0);
-      return `
-        <div class="timeline-group">
-          <div class="timeline-date">
-            <div class="day">${d.getDate()}</div>
-            <div class="month">${d.getFullYear()}년 ${d.getMonth()+1}월</div>
-            <div class="dday">${ddayLabel(date)}</div>
-          </div>
-          <div class="timeline-items">
-            ${items.map(projectCard).join('')}
-            <div class="timeline-total">
-              합계 <b>${fc(total)}원</b>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-    bindCardEvents(container);
-  }
-  function renderBarChart(id, data, fmtFn, unit) {
-    const container = document.getElementById(id);
-    const entries = Object.entries(data);
-    if (entries.length === 0) { container.innerHTML = '<p class="muted" style="padding:20px 0;">데이터가 없어요.</p>'; return; }
-    const max = Math.max(...entries.map(([_,v]) => v));
-    container.innerHTML = entries.map(([label, value]) => `
-      <div class="bar-row">
-        <span class="bar-label" title="${esc(label)}">${esc(label)}</span>
-        <div class="bar-track"><div class="bar-fill" style="width: ${max > 0 ? (value / max * 100) : 0}%"></div></div>
-        <span class="bar-value">${fmtFn(value)}${unit}</span>
-      </div>`).join('');
-  }
-  function renderStats() {
-    const p = state.projects;
-    const byCategory = {};
-    for (const x of p) { if (x.status === 'cancelled') continue; const c = x.category || '(미분류)'; byCategory[c] = (byCategory[c] || 0) + x.amount; }
-    renderBarChart('chart-category', byCategory, fc, '원');
-    const byMonth = {};
-    for (const x of p) { if (!x.paymentDate || x.status === 'cancelled') continue; const ym = String(x.paymentDate).slice(0,7); byMonth[ym] = (byMonth[ym] || 0) + x.amount; }
-    renderBarChart('chart-monthly', Object.fromEntries(Object.entries(byMonth).sort()), fc, '원');
-    const byStatus = {};
-    for (const x of p) { const s = sl(x.status); byStatus[s] = (byStatus[s] || 0) + 1; }
-    renderBarChart('chart-status', byStatus, v => v, '건');
-    const paid = p.filter(x => x.status === 'paid');
-    const downloaded = paid.filter(x => x.downloaded).length;
-    renderBarChart('chart-download', { '수령 완료': downloaded, '수령 대기': paid.length - downloaded }, v => v, '건');
-  }
-
-  // ================= 액션 =================
-  async function loadProjects() {
-    try {
-      const data = await apiCall('GET', { action: 'list' });
-      state.projects = data || [];
-      // 카테고리도 같이 로드 (병렬)
-      loadCategories().catch(() => {});
-      renderAll();
-    } catch (e) {
-      toast('시트 불러오기 실패: ' + e.message);
-    }
-  }
-  async function onToggleDownloaded(id) {
-    const p = state.projects.find(x => x.id === id);
-    if (!p) return;
-    const wasDownloaded = p.downloaded;
-    p.downloaded = !p.downloaded;
-    // 낙관적 업데이트: 체크하면 오늘 날짜, 해제하면 비움
-    if (p.downloaded && !p.downloadedAt) {
-      const now = new Date();
-      p.downloadedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    } else if (!p.downloaded) {
-      p.downloadedAt = '';
-    }
-    renderAll();
-    try {
-      const result = await apiCall('POST', { action: 'toggleDownloaded', id });
-      // 서버 응답으로 싱크
-      p.downloaded = result.downloaded;
-      p.downloadedAt = result.downloadedAt || '';
-      renderAll();
-    } catch (e) {
-      p.downloaded = wasDownloaded;
-      if (!wasDownloaded) p.downloadedAt = '';
-      renderAll();
-      toast('동기화 실패');
-    }
-  }
-  
-  async function onQuickDone(id) {
-    // 수령 완료 + 오늘 날짜 한 번에
-    const p = state.projects.find(x => x.id === id);
-    if (!p) return;
-    const today = (() => {
-      const n = new Date();
-      return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-    })();
-    p.downloaded = true;
-    p.downloadedAt = today;
-    renderAll();
-    try {
-      await apiCall('POST', { action: 'update', project: { id, downloaded: true, downloadedAt: today } });
-      toast('오늘 완료로 기록했어요');
-    } catch (e) {
-      p.downloaded = false;
-      p.downloadedAt = '';
-      renderAll();
-      toast('저장 실패');
-    }
-  }
-  
-  // ================= 카테고리 인라인 편집 =================
-  function closeCategoryPicker() {
-    const existing = document.getElementById('category-picker');
-    if (existing) existing.remove();
-  }
-  function openCategoryPicker(projectId, anchorEl) {
-    closeCategoryPicker();
-    const p = state.projects.find(x => x.id === projectId);
-    if (!p) return;
-    const current = p.category || '';
-    const allCats = getAllCategories();
-    
-    const picker = document.createElement('div');
-    picker.id = 'category-picker';
-    picker.className = 'category-picker';
-    
-    // 위치 계산 (anchor 아래)
-    const rect = anchorEl.getBoundingClientRect();
-    picker.style.left = rect.left + 'px';
-    picker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-    
-    picker.innerHTML = `
-      <div class="picker-list">
-        <button class="picker-item ${!current ? 'active' : ''}" data-cat="">
-          <span style="color: var(--text-subtle);">(카테고리 없음)</span>
-        </button>
-        ${allCats.map(c => `
-          <button class="picker-item ${c === current ? 'active' : ''}" data-cat="${esc(c)}">
-            ${esc(c)}${c === current ? ' ✓' : ''}
-          </button>
-        `).join('')}
-      </div>
-      <div class="picker-add">
-        <input type="text" id="new-cat-input" placeholder="새 카테고리 추가..." maxlength="20" />
-        <button class="btn btn-primary" id="new-cat-btn">+ 추가</button>
-      </div>
-    `;
-    document.body.appendChild(picker);
-    
-    // 클릭 이벤트
-    picker.querySelectorAll('.picker-item').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const cat = btn.dataset.cat;
-        closeCategoryPicker();
-        await updateCategory(projectId, cat);
-      });
-    });
-    
-    const addBtn = picker.querySelector('#new-cat-btn');
-    const addInput = picker.querySelector('#new-cat-input');
-    const doAdd = async () => {
-      const name = addInput.value.trim();
-      if (!name) { addInput.focus(); return; }
-      addBtn.disabled = true;
-      const ok = await addCustomCategory(name);
-      addBtn.disabled = false;
-      if (ok) {
-        closeCategoryPicker();
-        await updateCategory(projectId, name);
-      }
-    };
-    addBtn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
-    addInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); doAdd(); }
-      if (e.key === 'Escape') closeCategoryPicker();
-    });
-    addInput.addEventListener('click', e => e.stopPropagation());
-    
-    // 외부 클릭 시 닫기
-    setTimeout(() => {
-      document.addEventListener('click', closeCategoryPicker, { once: true });
-    }, 0);
-  }
-  async function updateCategory(projectId, category) {
-    const p = state.projects.find(x => x.id === projectId);
-    if (!p) return;
-    const prev = p.category;
-    p.category = category;
-    renderAll();
-    try {
-      await apiCall('POST', { action: 'update', project: { id: projectId, category } });
-      toast(category ? `카테고리를 "${category}"로 변경` : '카테고리 제거됨');
-    } catch (e) {
-      p.category = prev;
-      renderAll();
-      toast('변경 실패');
-    }
-  }
-  function populateCategorySelect(selectEl, currentValue, includeClearOption = false) {
-    const cats = getAllCategories();
-    const opts = ['<option value="">(선택 없음)</option>'];
-    for (const c of cats) {
-      opts.push(`<option value="${esc(c)}"${c === currentValue ? ' selected' : ''}>${esc(c)}</option>`);
-    }
-    if (includeClearOption) {
-      opts.push('<option value="__clear__">(카테고리 지우기)</option>');
-    }
-    selectEl.innerHTML = opts.join('');
-  }
-  
-  function openEditModal(id = null) {
-    state.editingId = id;
-    const modal = document.getElementById('modal-edit');
-    const form = document.getElementById('edit-form');
-    form.reset();
-    const title = document.getElementById('edit-title');
-    const deleteBtn = document.getElementById('btn-delete');
-    // 카테고리 드롭다운 동적 구성
-    const catSelect = document.getElementById('edit-category-select');
-    if (id) {
-      const p = state.projects.find(x => x.id === id);
-      if (!p) return;
-      title.textContent = '후원 편집';
-      deleteBtn.style.display = '';
-      form.title.value = p.title || '';
-      form.reward.value = p.reward || '';
-      form.creator.value = p.creator || '';
-      form.amount.value = p.amount || '';
-      populateCategorySelect(catSelect, p.category || '');
-      form.paymentDate.value = p.paymentDate || '';
-      form.deliveryDate.value = p.deliveryDate || '';
-      form.status.value = p.status || 'pending';
-      form.downloaded.checked = !!p.downloaded;
-      form.downloadedAt.value = p.downloadedAt || '';
-      form.url.value = p.url || '';
-      form.notes.value = p.notes || '';
-    } else {
-      title.textContent = '후원 추가';
-      deleteBtn.style.display = 'none';
-      form.status.value = 'pending';
-      populateCategorySelect(catSelect, '');
-    }
-    modal.classList.add('open');
-  }
-  async function saveFromForm() {
-    const form = document.getElementById('edit-form');
-    if (!form.title.value.trim()) { toast('제목을 입력해주세요'); form.title.focus(); return; }
-    if (!form.amount.value) { toast('금액을 입력해주세요'); form.amount.focus(); return; }
-    const data = {
-      title: form.title.value.trim(),
-      reward: form.reward.value.trim(),
-      creator: form.creator.value.trim(),
-      amount: Number(form.amount.value),
-      category: form.category.value,
-      paymentDate: form.paymentDate.value,
-      deliveryDate: form.deliveryDate.value,
-      status: form.status.value,
-      downloaded: form.downloaded.checked,
-      downloadedAt: form.downloaded.checked ? (form.downloadedAt.value || '') : '',
-      url: form.url.value.trim(),
-      notes: form.notes.value.trim(),
-    };
-    try {
-      if (state.editingId) {
-        const saved = await apiCall('POST', { action: 'update', project: { ...data, id: state.editingId } });
-        const idx = state.projects.findIndex(x => x.id === state.editingId);
-        if (idx >= 0) state.projects[idx] = saved;
-        toast('수정했어요');
-      } else {
-        const saved = await apiCall('POST', { action: 'add', project: data });
-        state.projects.push(saved);
-        toast('추가했어요');
-      }
-      closeModal('modal-edit');
-      renderAll();
-    } catch (e) { toast('저장 실패: ' + e.message); }
-  }
-  async function onDelete() {
-    if (!state.editingId) return;
-    if (!confirm('이 후원 기록을 삭제할까요?')) return;
-    try {
-      await apiCall('POST', { action: 'delete', id: state.editingId });
-      state.projects = state.projects.filter(x => x.id !== state.editingId);
-      closeModal('modal-edit');
-      renderAll();
-      toast('삭제했어요');
-    } catch (e) { toast('삭제 실패'); }
-  }
-  function openPasteModal() {
-    document.getElementById('modal-paste').classList.add('open');
-    document.getElementById('paste-area').value = '';
-    document.getElementById('parse-preview').innerHTML = '';
-    document.getElementById('btn-import').disabled = true;
-    document.getElementById('import-count').textContent = '0';
-    state.parsedCandidates = [];
-    setTimeout(() => document.getElementById('paste-area').focus(), 100);
-  }
-  function parseAndPreview() {
-    const text = document.getElementById('paste-area').value;
-    const parsed = parseTumblbugText(text);
-    const preview = document.getElementById('parse-preview');
-    if (parsed.length === 0) {
-      preview.innerHTML = '<p class="muted">인식된 후원이 없어요. 금액(예: 23,000원)이 포함되어 있는지 확인해주세요.</p>';
-      document.getElementById('btn-import').disabled = true;
-      state.parsedCandidates = [];
-      return;
-    }
-    const existingKeys = new Set(state.projects.map(p => (p.title || '').trim() + '::' + p.amount));
-    state.parsedCandidates = parsed.map(item => ({ ...item, isDuplicate: existingKeys.has(item.title.trim() + '::' + item.amount) }));
-    const newCount = state.parsedCandidates.filter(x => !x.isDuplicate).length;
-    preview.innerHTML = `
-      <h4>${parsed.length}건 인식됨 · 새로 추가: ${newCount}건</h4>
-      ${state.parsedCandidates.map(item => `
-        <div class="preview-item ${item.isDuplicate ? 'dup' : ''}">
-          <div>
-            <div class="t">${esc(item.title)}</div>
-            ${item.reward ? `<div style="font-size:11px; color: var(--text-muted); margin-top:2px;">🎁 ${esc(item.reward)}</div>` : ''}
-            <div style="font-size:11px; color: var(--text-subtle); margin-top:2px;">${item.paymentDate ? '후원 ' + fd(item.paymentDate) : '날짜 없음'}${item.deliveryDate ? ' · 전달 ' + fd(item.deliveryDate) : ''} · ${sl(item.status)}</div>
-          </div>
-          <div class="a">${fc(item.amount)}원</div>
-        </div>`).join('')}`;
-    document.getElementById('btn-import').disabled = newCount === 0;
-    document.getElementById('import-count').textContent = newCount;
-  }
-  async function importParsed() {
-    const toAdd = state.parsedCandidates.filter(x => !x.isDuplicate);
-    if (toAdd.length === 0) return;
-    try {
-      const result = await apiCall('POST', { action: 'addMany', projects: toAdd });
-      state.projects = state.projects.concat(result.items || []);
-      closeModal('modal-paste');
-      renderAll();
-      toast(`${result.added}건 시트에 저장했어요`);
-    } catch (e) { toast('저장 실패: ' + e.message); }
-  }
-  function closeModal(id) { document.getElementById(id).classList.remove('open'); state.editingId = null; }
-  function setView(v) {
-    state.view = v;
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    document.getElementById('view-' + v).classList.add('active');
-  }
-  
-  // ================= 선택 모드 / 일괄 작업 =================
-  function enterSelectMode() {
-    state.selectMode = true;
-    state.selectedIds = new Set();
-    document.body.classList.add('select-mode');
-    document.getElementById('bulk-bar').classList.add('active');
-    document.getElementById('btn-select-mode').textContent = '✕ 선택 종료';
-    // 일괄 카테고리 드롭다운 동적 구성
-    const bulkCatSel = document.getElementById('bulk-category-select');
-    bulkCatSel.innerHTML = '<option value="">카테고리 일괄 지정...</option>' +
-      getAllCategories().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') +
-      '<option value="__clear__">(카테고리 지우기)</option>';
-    updateBulkBar();
-    renderList();
-  }
-  function exitSelectMode() {
-    state.selectMode = false;
-    state.selectedIds = new Set();
-    document.body.classList.remove('select-mode');
-    document.getElementById('bulk-bar').classList.remove('active');
-    document.getElementById('btn-select-mode').textContent = '☐ 선택';
-    document.getElementById('select-all').checked = false;
-    renderList();
-  }
-  function toggleSelection(id) {
-    if (state.selectedIds.has(id)) state.selectedIds.delete(id);
-    else state.selectedIds.add(id);
-    updateBulkBar();
-    renderList();
-  }
-  function updateBulkBar() {
-    document.getElementById('selected-n').textContent = state.selectedIds.size;
-    // 전체 선택 체크박스는 현재 보이는 목록 기준
-    const visible = getFiltered();
-    const allSelected = visible.length > 0 && visible.every(p => state.selectedIds.has(p.id));
-    document.getElementById('select-all').checked = allSelected;
-  }
-  function selectAllVisible(checked) {
-    const visible = getFiltered();
-    if (checked) visible.forEach(p => state.selectedIds.add(p.id));
-    else visible.forEach(p => state.selectedIds.delete(p.id));
-    updateBulkBar();
-    renderList();
-  }
-  
-  async function bulkDelete() {
-    const ids = [...state.selectedIds];
-    if (ids.length === 0) return;
-    if (!confirm(`선택한 ${ids.length}개의 후원 기록을 삭제할까요?\n되돌릴 수 없어요.`)) return;
-    try {
-      await apiCall('POST', { action: 'deleteMany', ids });
-      state.projects = state.projects.filter(p => !state.selectedIds.has(p.id));
-      exitSelectMode();
-      renderAll();
-      toast(`${ids.length}건 삭제했어요`);
-    } catch (e) { toast('삭제 실패: ' + e.message); }
-  }
-  
-  async function bulkUpdate(changes, confirmMsg) {
-    const ids = [...state.selectedIds];
-    if (ids.length === 0) return;
-    if (confirmMsg && !confirm(confirmMsg)) return;
-    try {
-      await apiCall('POST', { action: 'updateMany', ids, changes });
-      // 로컬 상태 갱신
-      const today = (() => {
-        const n = new Date();
-        return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-      })();
-      state.projects.forEach(p => {
-        if (state.selectedIds.has(p.id)) {
-          Object.assign(p, changes);
-          if (changes.downloaded === true && !p.downloadedAt) p.downloadedAt = today;
-          if (changes.downloaded === false) p.downloadedAt = '';
-        }
-      });
-      exitSelectMode();
-      renderAll();
-      toast(`${ids.length}건 업데이트했어요`);
-    } catch (e) { toast('업데이트 실패: ' + e.message); }
-  }
-  
-  // ================= CSV 내보내기 =================
-  function exportCsv() {
-    const list = getFiltered();
-    if (list.length === 0) { toast('내보낼 항목이 없어요'); return; }
-    const headers = ['제목', '선물', '창작자', '금액', '카테고리', '상태', '후원일', '전달/결제일', '수령완료', '수령일', '메모', 'URL'];
-    const rows = list.map(p => [
-      p.title, p.reward || '', p.creator, p.amount, p.category,
-      sl(p.status), p.paymentDate, p.deliveryDate,
-      p.downloaded ? 'Y' : 'N', p.downloadedAt || '',
-      p.notes, p.url,
-    ]);
-    const csv = [headers, ...rows].map(row =>
-      row.map(cell => {
-        const s = String(cell ?? '');
-        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-      }).join(',')
-    ).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const d = new Date();
-    a.href = url;
-    a.download = `tumblbug-tracker-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-    toast(`${list.length}건 내보내기 완료`);
-  }
-
-  // ================= 초기화 =================
-  function showSetup() {
-    document.getElementById('setup-screen').style.display = 'grid';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('api-url-input').value = getApiUrl();
-    document.getElementById('api-url-input').focus();
-  }
-  function showApp() {
-    document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  }
-
-  document.getElementById('btn-save-url').addEventListener('click', async () => {
-    const url = document.getElementById('api-url-input').value.trim();
-    if (!url.startsWith('https://script.google.com/') || !url.endsWith('/exec')) {
-      toast('https://script.google.com/... /exec 형태의 URL이어야 해요');
-      return;
-    }
-    setApiUrl(url);
-    showApp();
-    await loadProjects();
-  });
-
-  document.getElementById('sync-indicator').addEventListener('click', () => {
-    if (confirm('API 주소를 변경하시겠어요?')) {
-      clearApiUrl();
-      location.reload();
-    }
-  });
-
-  // 이벤트 바인딩
-  document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setView(tab.dataset.view)));
-  document.getElementById('btn-paste').addEventListener('click', openPasteModal);
-  document.getElementById('btn-manual').addEventListener('click', () => openEditModal());
-  document.getElementById('btn-reload').addEventListener('click', loadProjects);
-  document.getElementById('search-input').addEventListener('input', e => { state.search = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
-  document.getElementById('filter-status').addEventListener('change', e => { state.filterStatus = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
-  document.getElementById('filter-category').addEventListener('change', e => { state.filterCategory = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
-  document.getElementById('filter-received').addEventListener('change', e => { state.filterReceived = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
-  document.getElementById('sort-by').addEventListener('change', e => { state.sortBy = e.target.value; renderList(); });
-  document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { el.closest('.modal').classList.remove('open'); state.editingId = null; }));
-  document.getElementById('btn-save').addEventListener('click', saveFromForm);
-  document.getElementById('btn-delete').addEventListener('click', onDelete);
-  document.getElementById('btn-parse').addEventListener('click', parseAndPreview);
-  document.getElementById('btn-import').addEventListener('click', importParsed);
-  document.getElementById('btn-csv').addEventListener('click', exportCsv);
-  
-  // 편집 모달 "오늘" 버튼 - 완료일에 오늘 날짜 채우기
-  document.getElementById('btn-today').addEventListener('click', () => {
-    const form = document.getElementById('edit-form');
-    const n = new Date();
-    form.downloadedAt.value = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-    form.downloaded.checked = true;
-  });
-  
-  // 선택 모드
-  document.getElementById('btn-select-mode').addEventListener('click', () => {
-    if (state.selectMode) exitSelectMode();
-    else enterSelectMode();
-  });
-  document.getElementById('btn-select-cancel').addEventListener('click', exitSelectMode);
-  document.getElementById('select-all').addEventListener('change', e => selectAllVisible(e.target.checked));
-  document.getElementById('btn-bulk-delete').addEventListener('click', bulkDelete);
-  document.getElementById('btn-bulk-download').addEventListener('click', () => {
-    const n = [...state.selectedIds].length;
-    if (n === 0) { toast('항목을 먼저 선택해주세요'); return; }
-    bulkUpdate({ downloaded: true }, `선택한 ${n}개를 오늘 수령 완료로 처리할까요?`);
-  });
-  document.getElementById('bulk-status-select').addEventListener('change', e => {
-    const v = e.target.value;
-    if (!v) return;
-    const n = state.selectedIds.size;
-    if (n === 0) { toast('항목을 먼저 선택해주세요'); e.target.value = ''; return; }
-    bulkUpdate({ status: v }, `선택한 ${n}개의 상태를 "${sl(v)}"로 변경할까요?`);
-    e.target.value = '';
-  });
-  document.getElementById('bulk-category-select').addEventListener('change', e => {
-    const v = e.target.value;
-    if (!v) return;
-    const n = state.selectedIds.size;
-    if (n === 0) { toast('항목을 먼저 선택해주세요'); e.target.value = ''; return; }
-    const cat = v === '__clear__' ? '' : v;
-    const label = cat || '(카테고리 없음)';
-    bulkUpdate({ category: cat }, `선택한 ${n}개의 카테고리를 "${label}"로 변경할까요?`);
-    e.target.value = '';
-  });
-  
-  // 키보드 단축키
-  document.addEventListener('keydown', e => {
-    // 모달 닫기
-    if (e.key === 'Escape') {
-      const openModal = document.querySelector('.modal.open');
-      if (openModal) { openModal.classList.remove('open'); state.editingId = null; return; }
-      if (state.selectMode) { exitSelectMode(); return; }
-    }
-    // 입력 중이면 단축키 무시
-    const t = e.target.tagName;
-    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    
-    if (e.key === 'n' || e.key === 'N') {
-      e.preventDefault();
-      openEditModal();
-    } else if (e.key === '/') {
-      e.preventDefault();
-      document.getElementById('search-input').focus();
-    } else if (e.key === 's' || e.key === 'S') {
-      e.preventDefault();
-      document.getElementById('btn-select-mode').click();
-    }
-  });
-
-  // 시작
-  if (getApiUrl()) {
-    showApp();
-    loadProjects();
+  // projects 시트 점검
+  const projects = ss.getSheetByName('projects');
+  if (!projects) {
+    messages.push('❌ projects 시트가 없음');
   } else {
-    showSetup();
+    const lastRow = projects.getLastRow();
+    const lastCol = projects.getLastColumn();
+    const headers = projects.getRange(1, 1, 1, lastCol).getValues()[0];
+    messages.push('✓ projects 시트:');
+    messages.push('  - 행 개수: ' + (lastRow - 1) + '건');
+    messages.push('  - 컬럼 수: ' + lastCol);
+    messages.push('  - 헤더:');
+    headers.forEach((h, i) => {
+      const col = String.fromCharCode(65 + i);  // A, B, C...
+      messages.push(`    ${col}: ${h || '(비어있음)'}`);
+    });
   }
-  </script>
-</body>
-</html>
+  
+  messages.push('');
+  
+  // categories 시트 점검
+  const categories = ss.getSheetByName('categories');
+  if (!categories) {
+    messages.push('❌ categories 시트가 없음');
+  } else {
+    const lastRow = categories.getLastRow();
+    messages.push('✓ categories 시트:');
+    messages.push('  - 커스텀 카테고리 개수: ' + Math.max(0, lastRow - 1));
+    if (lastRow > 1) {
+      const cats = categories.getRange(2, 1, lastRow - 1, 1).getValues().map(r => r[0]).filter(Boolean);
+      messages.push('  - 목록: ' + cats.join(', '));
+    }
+  }
+  
+  const report = messages.join('\n');
+  Logger.log(report);
+  
+  try {
+    SpreadsheetApp.getUi().alert('📊 시트 상태', report, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    // UI 컨텍스트가 없을 때는 로그로만
+  }
+  
+  return report;
+}
