@@ -257,11 +257,14 @@
       border-radius: var(--radius);
       padding: 10px 14px;
       display: grid;
-      grid-template-columns: auto auto 1fr 90px 110px 160px;
+      grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
       align-items: center;
       gap: 14px;
       transition: all .12s;
       cursor: pointer;
+    }
+    .project .info {
+      min-width: 0;
     }
     .status-cell {
       display: flex;
