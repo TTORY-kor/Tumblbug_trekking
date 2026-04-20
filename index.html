@@ -257,7 +257,7 @@
       border-radius: var(--radius);
       padding: 10px 14px;
       display: grid;
-      grid-template-columns: auto auto 1fr auto auto auto;
+      grid-template-columns: auto auto 1fr auto auto auto auto;
       align-items: center;
       gap: 14px;
       transition: all .12s;
@@ -312,30 +312,26 @@
     }
     .project .edit-btn-inline {
       background: transparent; border: none; cursor: pointer;
-      width: 22px; height: 22px;
+      width: 24px; height: 24px;
       display: grid; place-items: center;
-      color: var(--text-subtle);
+      color: var(--text-muted);
       border-radius: 4px;
-      font-size: 12px;
-      opacity: 0;
+      font-size: 13px;
       transition: all .12s;
       flex-shrink: 0;
     }
-    .project:hover .edit-btn-inline { opacity: 1; }
-    .project .edit-btn-inline:hover { background: var(--surface-3); color: var(--text); }
+    .project .edit-btn-inline:hover { background: var(--accent-soft); color: var(--accent); }
     .project .link-btn-inline {
       background: transparent; border: none; cursor: pointer;
-      width: 22px; height: 22px;
+      width: 24px; height: 24px;
       display: grid; place-items: center;
-      color: var(--text-subtle);
+      color: var(--text-muted);
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 12px;
       text-decoration: none;
-      opacity: 0;
       transition: all .12s;
       flex-shrink: 0;
     }
-    .project:hover .link-btn-inline { opacity: 1; }
     .project .link-btn-inline:hover { background: var(--surface-3); color: var(--text); }
 
     .project .meta {
@@ -361,16 +357,46 @@
       letter-spacing: -0.01em;
     }
     .project .date-info {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
       font-size: 11px; color: var(--text-muted);
       text-align: right;
-      min-width: 90px;
+      min-width: 110px;
     }
-    .project .date-info .label { font-size: 9px; color: var(--text-subtle); letter-spacing: .03em; text-transform: uppercase; }
-    .project .date-info .value { color: var(--text); font-weight: 500; font-size: 12px; font-variant-numeric: tabular-nums; }
-    .project .date-info.urgent .value { color: var(--warn); }
+    .project .date-line {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .project .date-line.muted { color: var(--text-subtle); }
+    .project .date-label {
+      font-size: 9px;
+      color: var(--text-subtle);
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: .02em;
+      font-weight: 500;
+    }
+    .project .date-info.urgent .date-line { color: var(--warn); }
     .project .dday { font-size: 10px; color: var(--text-subtle); margin-left: 3px; }
     .project .dday.urgent { color: var(--warn); font-weight: 600; }
+
+    .reward-line {
+      font-size: 12px;
+      color: var(--text);
+      padding: 3px 10px;
+      background: var(--accent-soft);
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 3px;
+      max-width: fit-content;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+      font-weight: 500;
+    }
 
     .status {
       padding: 2px 8px;
@@ -701,12 +727,23 @@
       }
       .project .shared-with {
         grid-column: 2 / -1;
-        grid-row: 2;
+        grid-row: 3;
         max-width: 100%;
         justify-self: start;
       }
-      .project .date-info, .project .status { grid-column: 2 / -1; align-items: flex-start; }
-      .project .date-info { flex-direction: row; gap: 6px; }
+      .project .status {
+        grid-column: 2 / 4;
+        grid-row: 2;
+        justify-self: start;
+      }
+      .project .date-info {
+        grid-column: 2 / -1;
+        grid-row: 4;
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
       .project .amount { grid-column: 4; grid-row: 1; }
       .project .edit-btn-inline, .project .link-btn-inline { opacity: 1; }
       .stats-grid { grid-template-columns: 1fr; }
@@ -895,6 +932,7 @@
       <div class="modal-body">
         <form id="edit-form" class="form" onsubmit="return false;">
           <label><span>프로젝트 제목 <em>*</em></span><input type="text" name="title" required /></label>
+          <label><span>선물 옵션 (무엇을 샀는지)</span><input type="text" name="reward" placeholder="예: [얼리버드] 풀세트" /></label>
           <label><span>창작자</span><input type="text" name="creator" /></label>
           <div class="form-row">
             <label><span>후원 금액 (원) <em>*</em></span><input type="number" name="amount" min="0" step="1000" required /></label>
@@ -909,8 +947,8 @@
             </label>
           </div>
           <div class="form-row">
-            <label><span>결제 예정일</span><input type="date" name="paymentDate" /></label>
-            <label><span>수령 예정일</span><input type="date" name="deliveryDate" /></label>
+            <label><span>후원한 날짜</span><input type="date" name="paymentDate" /></label>
+            <label><span>선물 전달 예정일</span><input type="date" name="deliveryDate" /></label>
           </div>
           <label><span>상태</span>
             <select name="status">
@@ -1138,7 +1176,8 @@
       downloaded: false,
       url: '',
       category: '',
-      notes: reward ? `선물: ${reward}` : '',
+      reward: reward || '',        // 선물 옵션 (별도 필드)
+      notes: '',
     };
   }
 
@@ -1171,7 +1210,7 @@
   }
   function getFiltered() {
     let arr = [...state.projects];
-    if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(p => (p.title||'').toLowerCase().includes(q) || (p.creator||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q) || (p.sharedWith||'').toLowerCase().includes(q)); }
+    if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(p => (p.title||'').toLowerCase().includes(q) || (p.creator||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q) || (p.sharedWith||'').toLowerCase().includes(q) || (p.reward||'').toLowerCase().includes(q)); }
     if (state.filterStatus !== 'all') arr = arr.filter(p => p.status === state.filterStatus);
     const sorters = {
       'recent': (a, b) => {
@@ -1214,19 +1253,22 @@
             ${p.url ? `<a class="link-btn-inline" href="${esc(p.url)}" target="_blank" rel="noopener" title="프로젝트 열기">↗</a>` : ''}
             ${stale ? '<span class="stale-badge">30일+</span>' : ''}
           </div>
+          ${p.reward ? `<div class="reward-line">🎁 ${esc(p.reward)}</div>` : ''}
           <div class="meta">
             ${p.creator ? `<span>by ${esc(p.creator)}</span>` : ''}
             ${p.category ? `<span class="category-tag">${esc(p.category)}</span>` : ''}
-            <span class="status status-${p.status}">${sl(p.status)}</span>
             ${p.downloaded && p.downloadedAt ? `<span class="downloaded-at">✓ ${fd(p.downloadedAt)}</span>` : ''}
             ${!p.downloaded && p.status === 'paid' ? `<button class="quick-done-btn" data-action="quick-done">오늘 완료</button>` : ''}
             ${p.notes ? `<span title="${esc(p.notes)}">📝</span>` : ''}
           </div>
         </div>
-        <div class="shared-with" title="${p.sharedWith ? '함께한 사람: ' + esc(p.sharedWith) : '편집해서 함께한 사람 기록'}">${p.sharedWith ? '👥 ' + esc(p.sharedWith) : ''}</div>
+        <div class="shared-with" title="${p.sharedWith ? '함께한 사람: ' + esc(p.sharedWith) : ''}">${p.sharedWith ? '👥 ' + esc(p.sharedWith) : ''}</div>
+        <span class="status status-${p.status}">${sl(p.status)}</span>
         <div class="amount">${fc(p.amount)}원</div>
         <div class="date-info ${urgent ? 'urgent' : ''}">
-          <span class="value">${dateText}${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}</span>
+          ${p.paymentDate ? `<span class="date-line"><span class="date-label">후원</span> ${fd(p.paymentDate)}</span>` : ''}
+          ${p.deliveryDate ? `<span class="date-line"><span class="date-label">${p.status === 'pending' ? '결제' : '전달'}</span> ${fd(p.deliveryDate)}${ddayText ? `<span class="dday ${urgent ? 'urgent' : ''}">${ddayText}</span>` : ''}</span>` : ''}
+          ${!p.paymentDate && !p.deliveryDate ? '<span class="date-line muted">-</span>' : ''}
         </div>
       </article>`;
   }
@@ -1397,6 +1439,7 @@
       title.textContent = '후원 편집';
       deleteBtn.style.display = '';
       form.title.value = p.title || '';
+      form.reward.value = p.reward || '';
       form.creator.value = p.creator || '';
       form.amount.value = p.amount || '';
       form.category.value = p.category || '';
@@ -1421,6 +1464,7 @@
     if (!form.amount.value) { toast('금액을 입력해주세요'); form.amount.focus(); return; }
     const data = {
       title: form.title.value.trim(),
+      reward: form.reward.value.trim(),
       creator: form.creator.value.trim(),
       amount: Number(form.amount.value),
       category: form.category.value,
@@ -1487,7 +1531,8 @@
         <div class="preview-item ${item.isDuplicate ? 'dup' : ''}">
           <div>
             <div class="t">${esc(item.title)}</div>
-            <div style="font-size:11px; color: var(--ink-mute); margin-top:2px;">${item.paymentDate ? fd(item.paymentDate) : '날짜 없음'} · ${sl(item.status)}</div>
+            ${item.reward ? `<div style="font-size:11px; color: var(--text-muted); margin-top:2px;">🎁 ${esc(item.reward)}</div>` : ''}
+            <div style="font-size:11px; color: var(--text-subtle); margin-top:2px;">${item.paymentDate ? '후원 ' + fd(item.paymentDate) : '날짜 없음'}${item.deliveryDate ? ' · 전달 ' + fd(item.deliveryDate) : ''} · ${sl(item.status)}</div>
           </div>
           <div class="a">${fc(item.amount)}원</div>
         </div>`).join('')}`;
@@ -1594,9 +1639,9 @@
   function exportCsv() {
     const list = getFiltered();
     if (list.length === 0) { toast('내보낼 항목이 없어요'); return; }
-    const headers = ['제목', '창작자', '금액', '카테고리', '상태', '후원일', '전달/결제일', '수령완료', '수령일', '공유한 사람', '메모', 'URL'];
+    const headers = ['제목', '선물', '창작자', '금액', '카테고리', '상태', '후원일', '전달/결제일', '수령완료', '수령일', '공유한 사람', '메모', 'URL'];
     const rows = list.map(p => [
-      p.title, p.creator, p.amount, p.category,
+      p.title, p.reward || '', p.creator, p.amount, p.category,
       sl(p.status), p.paymentDate, p.deliveryDate,
       p.downloaded ? 'Y' : 'N', p.downloadedAt || '',
       p.sharedWith || '', p.notes, p.url,
