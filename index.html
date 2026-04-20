@@ -446,71 +446,55 @@
     }
   }
 
-  // ================= 파서 =================
+  // ================= 파서 (텀블벅 실제 레이아웃 전용) =================
+  // 텀블벅 "후원한 프로젝트" 페이지 구조:
+  //   상태마커(후원 성공/예약 주문 성공/후원 무산/후원 예약) → cover_image → YYYY. MM. DD 후원
+  //   → 제목 → 선물명(x1) → 금액원 → YYYY. MM. DD 선물 전달 예정/완료 → ...
   const AMOUNT_RE = /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,})\s*원/;
-  const DATE_RE = /(\d{4})[.\-\/년]\s*(\d{1,2})[.\-\/월]\s*(\d{1,2})/;
-  const DDAY_RE = /D[-−]?\s*(\d+)/i;
-  const STATUS_KEYWORDS = {
-    paid: ['결제 완료', '결제완료', '정산 완료'],
-    pending: ['결제 예정', '결제예정', '펀딩 성공', '펀딩성공', '결제 대기'],
-    failed: ['결제 실패', '결제실패', '재결제'],
-    cancelled: ['펀딩 무산', '펀딩무산', '프로젝트 무산', '후원 취소', '취소됨'],
-  };
-  function parseAmount(text) { const m = text.match(AMOUNT_RE); return m ? parseInt(m[1].replace(/,/g, ''), 10) : 0; }
-  function parseDate(text) { const m = text.match(DATE_RE); if (!m) return ''; return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; }
-  function parseDDay(text) { const m = text.match(DDAY_RE); if (!m) return ''; const t = new Date(); t.setDate(t.getDate() + parseInt(m[1], 10)); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; }
-  function detectStatus(text) { for (const [s, kws] of Object.entries(STATUS_KEYWORDS)) { if (kws.some(k => text.includes(k))) return s; } return 'pending'; }
-  function splitBlocks(text) {
-    const normalized = text.replace(/\r\n/g, '\n').replace(/[\t ]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
-    let blocks = normalized.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
-    if (blocks.length === 1 && blocks[0].split('\n').length > 4) {
-      const lines = blocks[0].split('\n');
-      const rebuilt = [];
-      let current = [], hasAmount = false, hasStatus = false, hasDate = false;
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        current.push(line);
-        if (AMOUNT_RE.test(line)) hasAmount = true;
-        if (Object.values(STATUS_KEYWORDS).flat().some(k => line.includes(k))) hasStatus = true;
-        if (DATE_RE.test(line) || DDAY_RE.test(line)) hasDate = true;
-        const hasNext = i < lines.length - 1;
-        const nextLine = hasNext ? lines[i + 1] : '';
-        const nextIsDateOnly = nextLine && DATE_RE.test(nextLine) && !Object.values(STATUS_KEYWORDS).flat().some(k => nextLine.includes(k)) && !AMOUNT_RE.test(nextLine);
-        if (hasAmount && (hasStatus || hasDate) && hasNext && current.length >= 2 && !nextIsDateOnly) {
-          rebuilt.push(current.join('\n'));
-          current = []; hasAmount = hasStatus = hasDate = false;
-        }
-      }
-      if (current.length) rebuilt.push(current.join('\n'));
-      if (rebuilt.length > 1) blocks = rebuilt;
-    }
-    return blocks;
+  const DATE_RE = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;
+  const STATUS_MARKERS = [
+    { re: /^후원\s*성공\s*$/, status: 'paid' },
+    { re: /^예약\s*주문\s*성공\s*$/, status: 'paid' },
+    { re: /^후원\s*예약\s*$/, status: 'pending' },
+    { re: /^결제\s*예정\s*$/, status: 'pending' },
+    { re: /^후원\s*무산\s*$/, status: 'cancelled' },
+    { re: /^펀딩\s*무산\s*$/, status: 'cancelled' },
+    { re: /^프로젝트\s*무산\s*$/, status: 'cancelled' },
+    { re: /^결제\s*실패\s*$/, status: 'failed' },
+    { re: /^재결제\s*$/, status: 'failed' },
+  ];
+  function detectStatusMarker(line) {
+    const trimmed = line.trim();
+    for (const m of STATUS_MARKERS) if (m.re.test(trimmed)) return m.status;
+    return null;
   }
-  function parseBlock(block) {
-    const lines = block.split('\n').map(s => s.trim()).filter(Boolean);
-    if (lines.length === 0) return null;
-    const amount = parseAmount(block);
-    if (amount === 0) return null;
-    const isMetaLine = (l) => AMOUNT_RE.test(l) || DATE_RE.test(l) || DDAY_RE.test(l) || Object.values(STATUS_KEYWORDS).flat().some(k => l.includes(k)) || /^(결제|후원|창작자|카테고리|배송|선물)/.test(l);
-    const contentLines = lines.filter(l => !isMetaLine(l));
-    let title = contentLines[0] || lines[0] || '';
-    if (title.length < 3 && contentLines.length > 1) title = contentLines.reduce((a, b) => b.length > a.length ? b : a, title);
-    title = title.replace(/^(프로젝트|제목)\s*[:：]\s*/, '').trim();
-    let creator = '';
-    const byMatch = block.match(/(?:^|\n)\s*by\s+([^\n]+)/i) || block.match(/창작자[\s:：]+([^\n]+)/);
-    if (byMatch) creator = byMatch[1].trim();
-    const paymentDate = parseDate(block) || parseDDay(block);
-    const status = detectStatus(block);
-    const urlMatch = block.match(/https?:\/\/[^\s]+/);
-    return { title: title.slice(0, 200), creator, amount, paymentDate, status, url: urlMatch ? urlMatch[0] : '', category: '' };
+  function parseTumblbugDate(text) {
+    const m = text.match(DATE_RE);
+    if (!m) return '';
+    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
   }
   function parseTumblbugText(text) {
     if (!text || !text.trim()) return [];
-    const blocks = splitBlocks(text);
+    const lines = text.replace(/\r\n/g, '\n').split('\n').map(l => l.trim());
+
+    // 상태 마커를 기준으로 블록 분리
+    const blocks = [];
+    let current = null;
+    for (const line of lines) {
+      const status = detectStatusMarker(line);
+      if (status) {
+        if (current) blocks.push(current);
+        current = { status, lines: [] };
+      } else if (current) {
+        current.lines.push(line);
+      }
+    }
+    if (current) blocks.push(current);
+
     const results = [];
     const seen = new Set();
     for (const block of blocks) {
-      const parsed = parseBlock(block);
+      const parsed = parseTumblbugBlock(block);
       if (!parsed) continue;
       const key = `${parsed.title}::${parsed.amount}`;
       if (seen.has(key)) continue;
@@ -518,6 +502,78 @@
       results.push(parsed);
     }
     return results;
+  }
+  function parseTumblbugBlock(block) {
+    const lines = block.lines.filter(l => l.length > 0);
+    if (lines.length === 0) return null;
+
+    // 금액: 단독 라인 우선, 괄호 안 금액 무시 (예: "(2,000원)")
+    let amount = 0;
+    for (const l of lines) {
+      if (/^[0-9]{1,3}(?:,[0-9]{3})+\s*원\s*$/.test(l) || /^[0-9]{4,}\s*원\s*$/.test(l)) {
+        const m = l.match(AMOUNT_RE);
+        if (m) { amount = parseInt(m[1].replace(/,/g, ''), 10); break; }
+      }
+    }
+    if (amount === 0) {
+      for (const l of lines) {
+        const cleaned = l.replace(/\([^)]*\)/g, '');
+        const m = cleaned.match(AMOUNT_RE);
+        if (m) {
+          const a = parseInt(m[1].replace(/,/g, ''), 10);
+          if (a > amount) amount = a;
+        }
+      }
+    }
+    if (amount === 0) return null;
+
+    // 후원일 (YYYY. MM. DD 후원)
+    let fundingDate = '';
+    for (const l of lines) {
+      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*후원/.test(l)) {
+        fundingDate = parseTumblbugDate(l);
+        break;
+      }
+    }
+    // 선물 전달 예정/완료일
+    let deliveryDate = '';
+    for (const l of lines) {
+      if (/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*선물\s*전달/.test(l)) {
+        deliveryDate = parseTumblbugDate(l);
+        break;
+      }
+    }
+
+    // 노이즈 제거 후 제목/선물 추출
+    const isNoise = (l) => (
+      l === 'cover_image' ||
+      l === '후원 상세' ||
+      l === '창작자 문의' ||
+      l === '후기 작성' ||
+      l === '다운받기' ||
+      l.includes('디지털선물을 전달') ||
+      AMOUNT_RE.test(l) ||
+      /\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*(후원|선물\s*전달)/.test(l)
+    );
+    const contentLines = lines.filter(l => !isNoise(l));
+    let title = contentLines[0] || '';
+    let reward = '';
+    if (contentLines.length >= 2 && /\(x\d+\)\s*$/.test(contentLines[1])) {
+      reward = contentLines[1].replace(/\s*\(x\d+\)\s*$/, '').trim();
+    }
+
+    return {
+      title: title.slice(0, 200),
+      creator: '',
+      amount,
+      paymentDate: fundingDate,    // 후원일 (결제 기준)
+      deliveryDate,                // 선물 전달 예정/완료일
+      status: block.status,
+      downloaded: false,
+      url: '',
+      category: '',
+      notes: reward ? `선물: ${reward}` : '',
+    };
   }
 
   // ================= 유틸 =================
