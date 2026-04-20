@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>텀블벅 후원 트래커</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="grain"></div>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark">✦</div>
+        <div class="brand-text">
+          <h1>텀블벅 트래커</h1>
+          <p class="tagline">내가 밀어준 프로젝트, 한눈에.</p>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-view="list">후원 목록</button>
+        <button class="tab" data-view="calendar">결제 일정</button>
+        <button class="tab" data-view="stats">통계</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- 통계 요약 바 -->
+    <section class="summary">
+      <div class="summary-card">
+        <span class="summary-label">총 후원</span>
+        <span class="summary-value" id="stat-total-count">0<small>건</small></span>
+      </div>
+      <div class="summary-card accent">
+        <span class="summary-label">총 금액</span>
+        <span class="summary-value" id="stat-total-amount">0<small>원</small></span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">결제 예정</span>
+        <span class="summary-value" id="stat-pending">0<small>건</small></span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">수령 대기</span>
+        <span class="summary-value" id="stat-waiting">0<small>건</small></span>
+      </div>
+    </section>
+
+    <!-- 후원 목록 뷰 -->
+    <section class="view view-list active" id="view-list">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-primary" id="btn-paste">붙여넣기로 추가</button>
+          <button class="btn" id="btn-manual">직접 입력</button>
+        </div>
+        <div class="toolbar-right">
+          <input type="search" id="search-input" placeholder="프로젝트 검색..." />
+          <select id="filter-status">
+            <option value="all">전체 상태</option>
+            <option value="pending">결제 예정</option>
+            <option value="paid">결제 완료</option>
+            <option value="cancelled">무산/취소</option>
+          </select>
+          <select id="sort-by">
+            <option value="date-asc">결제일 빠른순</option>
+            <option value="date-desc">결제일 늦은순</option>
+            <option value="amount-desc">금액 높은순</option>
+            <option value="amount-asc">금액 낮은순</option>
+            <option value="title">제목순</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="projects" id="projects-list">
+        <!-- 비어있을 때 -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">◈</div>
+          <h2>아직 기록된 후원이 없어요</h2>
+          <p>텀블벅 <b>내 후원 현황</b> 페이지에서 내역을 복사해 붙여넣거나,<br/>직접 입력해서 추가해보세요.</p>
+          <div class="empty-actions">
+            <button class="btn btn-primary" onclick="document.getElementById('btn-paste').click()">붙여넣기로 시작</button>
+            <button class="btn" onclick="document.getElementById('btn-manual').click()">직접 입력</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결제 일정 뷰 -->
+    <section class="view view-calendar" id="view-calendar">
+      <div class="calendar-header">
+        <h2>다가오는 결제</h2>
+        <p class="muted">텀블벅은 프로젝트 종료일 다음 날부터 7일간 결제가 진행돼요.</p>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <!-- 통계 뷰 -->
+    <section class="view view-stats" id="view-stats">
+      <div class="stats-grid">
+        <div class="stats-card big">
+          <h3>카테고리별 지출</h3>
+          <div id="chart-category" class="chart"></div>
+        </div>
+        <div class="stats-card">
+          <h3>월별 결제 금액</h3>
+          <div id="chart-monthly" class="chart"></div>
+        </div>
+        <div class="stats-card">
+          <h3>상태별 분포</h3>
+          <div id="chart-status" class="chart"></div>
+        </div>
+        <div class="stats-card">
+          <h3>다운로드 / 수령 현황</h3>
+          <div id="chart-download" class="chart"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 붙여넣기 모달 -->
+  <div class="modal" id="modal-paste">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <header class="modal-head">
+        <h2>텀블벅 페이지에서 붙여넣기</h2>
+        <button class="icon-btn" data-close>✕</button>
+      </header>
+      <div class="modal-body">
+        <div class="info-box">
+          <strong>사용 방법</strong>
+          <ol>
+            <li>텀블벅 로그인 → 프로필 → <b>후원 현황(후원한 프로젝트)</b> 열기</li>
+            <li>후원 목록 영역을 드래그해서 복사 (Ctrl+C / ⌘+C)</li>
+            <li>아래 칸에 붙여넣기 (Ctrl+V / ⌘+V) → <b>분석</b></li>
+          </ol>
+          <p class="tip">💡 복사가 잘 안 되면 한 프로젝트씩 분리해서 여러 번 붙여넣어도 돼요. 중복은 자동으로 걸러집니다.</p>
+        </div>
+        <textarea id="paste-area" placeholder="여기에 후원 현황 페이지 내용을 붙여넣으세요..."></textarea>
+        <div class="parse-preview" id="parse-preview"></div>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn" data-close>취소</button>
+        <button class="btn btn-primary" id="btn-parse">분석하기</button>
+        <button class="btn btn-primary" id="btn-import" disabled>저장 (<span id="import-count">0</span>건)</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 직접 입력 / 편집 모달 -->
+  <div class="modal" id="modal-edit">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <header class="modal-head">
+        <h2 id="edit-title">후원 추가</h2>
+        <button class="icon-btn" data-close>✕</button>
+      </header>
+      <div class="modal-body">
+        <form id="edit-form" class="form">
+          <label>
+            <span>프로젝트 제목 <em>*</em></span>
+            <input type="text" name="title" required />
+          </label>
+          <label>
+            <span>창작자</span>
+            <input type="text" name="creator" />
+          </label>
+          <div class="form-row">
+            <label>
+              <span>후원 금액 (원) <em>*</em></span>
+              <input type="number" name="amount" min="0" step="1000" required />
+            </label>
+            <label>
+              <span>카테고리</span>
+              <select name="category">
+                <option value="">(선택 없음)</option>
+                <option>출판</option>
+                <option>게임</option>
+                <option>만화/웹툰</option>
+                <option>음악</option>
+                <option>패션/잡화</option>
+                <option>디자인</option>
+                <option>아트</option>
+                <option>테크</option>
+                <option>푸드</option>
+                <option>영화/영상</option>
+                <option>기타</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              <span>결제 예정일</span>
+              <input type="date" name="paymentDate" />
+            </label>
+            <label>
+              <span>수령 예정일</span>
+              <input type="date" name="deliveryDate" />
+            </label>
+          </div>
+          <label>
+            <span>상태</span>
+            <select name="status">
+              <option value="pending">결제 예정</option>
+              <option value="paid">결제 완료</option>
+              <option value="cancelled">무산/취소</option>
+              <option value="failed">결제 실패</option>
+            </select>
+          </label>
+          <div class="checkbox-row">
+            <label class="checkbox">
+              <input type="checkbox" name="downloaded" />
+              <span>다운로드 / 수령 완료</span>
+            </label>
+          </div>
+          <label>
+            <span>프로젝트 URL</span>
+            <input type="url" name="url" placeholder="https://tumblbug.com/..." />
+          </label>
+          <label>
+            <span>메모</span>
+            <textarea name="notes" rows="3"></textarea>
+          </label>
+        </form>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn btn-danger" id="btn-delete" style="display:none">삭제</button>
+        <div class="spacer"></div>
+        <button class="btn" data-close>취소</button>
+        <button class="btn btn-primary" id="btn-save">저장</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 설정 / 데이터 관리 -->
+  <div class="fab-wrap">
+    <button class="fab" id="btn-menu" title="데이터 관리">⚙</button>
+    <div class="fab-menu" id="fab-menu">
+      <button data-action="export-json">JSON 내보내기</button>
+      <button data-action="import-json">JSON 불러오기</button>
+      <button data-action="export-csv">CSV 내보내기</button>
+      <button data-action="clear">전체 삭제</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept=".json" style="display:none" />
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
