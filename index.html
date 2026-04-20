@@ -184,6 +184,75 @@
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 12px 20px; border-radius: var(--radius); font-size: 14px; box-shadow: var(--shadow-lg); z-index: 200; animation: toast-in .3s; max-width: 90vw; text-align: center; }
     @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } }
 
+    /* 선택 모드 */
+    .bulk-bar {
+      display: none;
+      background: var(--ink); color: var(--paper);
+      padding: 12px 18px; margin-bottom: 12px;
+      border-radius: var(--radius);
+      align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      box-shadow: var(--shadow-md);
+    }
+    .bulk-bar.active { display: flex; }
+    .bulk-bar .checkbox span { color: var(--paper); font-weight: 500; }
+    .bulk-bar .bulk-left { display: flex; align-items: center; gap: 18px; }
+    .bulk-bar .bulk-right { display: flex; gap: 6px; flex-wrap: wrap; }
+    .bulk-bar .selected-count { color: var(--accent-soft); font-size: 13px; }
+    .bulk-bar .selected-count b { color: var(--paper); font-family: var(--font-display); font-size: 16px; margin-right: 4px; }
+    .bulk-bar .btn { background: rgba(255,255,255,.1); color: var(--paper); border-color: rgba(255,255,255,.2); font-size: 13px; padding: 7px 12px; }
+    .bulk-bar .btn:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); }
+    .bulk-bar .btn-danger { background: var(--danger); border-color: var(--danger); color: var(--paper); }
+    .bulk-bar .btn-danger:hover { background: #b91c1c; }
+    .bulk-bar select.btn option { background: var(--paper); color: var(--ink); }
+
+    /* 선택 모드에서 프로젝트 카드의 선택 체크박스 */
+    .select-box {
+      width: 20px; height: 20px;
+      border: 1.5px solid var(--line);
+      border-radius: 3px;
+      display: none;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      background: var(--paper);
+    }
+    .select-box.checked { background: var(--accent); border-color: var(--accent); }
+    .select-box.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+    body.select-mode .select-box { display: grid; }
+    body.select-mode .project { cursor: pointer; }
+    body.select-mode .project.selected { background: rgba(194,65,12,.06); border-color: var(--accent); }
+    body.select-mode .project .check,
+    body.select-mode .project .actions { display: none; }
+
+    /* 오래 미수령 배지 */
+    .stale-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: rgba(180,83,9,.15);
+      color: var(--warn);
+      border-radius: 2px;
+      font-size: 11px; font-weight: 600;
+      margin-left: 6px;
+    }
+
+    /* 다운로드 완료일 표시 */
+    .downloaded-at {
+      font-size: 11px; color: var(--ok);
+      margin-left: 4px;
+    }
+
+    /* 빠른 완료 버튼 */
+    .quick-done-btn {
+      background: transparent; border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 11px; cursor: pointer;
+      color: var(--ink-mute);
+      transition: all .15s;
+    }
+    .quick-done-btn:hover { background: var(--ok); color: white; border-color: var(--ok); }
+
     @media (max-width: 720px) {
       .header-inner { padding: 16px; }
       .main { padding: 20px 16px; }
@@ -261,6 +330,7 @@
           <div class="toolbar-left">
             <button class="btn btn-primary" id="btn-paste">붙여넣기로 추가</button>
             <button class="btn" id="btn-manual">직접 입력</button>
+            <button class="btn" id="btn-select-mode">☐ 선택</button>
             <button class="btn" id="btn-reload" title="시트 새로고침">↻</button>
           </div>
           <div class="toolbar-right">
@@ -279,6 +349,35 @@
               <option value="amount-asc">금액 낮은순</option>
               <option value="title">제목순</option>
             </select>
+            <button class="btn" id="btn-csv" title="현재 보기를 CSV로 내보내기">CSV</button>
+          </div>
+        </div>
+
+        <!-- 선택 모드 전용 액션 바 -->
+        <div class="bulk-bar" id="bulk-bar">
+          <div class="bulk-left">
+            <label class="checkbox"><input type="checkbox" id="select-all" /><span>전체 선택</span></label>
+            <span class="selected-count"><b id="selected-n">0</b>개 선택됨</span>
+          </div>
+          <div class="bulk-right">
+            <button class="btn" id="btn-bulk-download">✓ 수령 완료 처리</button>
+            <select id="bulk-status-select" class="btn">
+              <option value="">상태 일괄 변경...</option>
+              <option value="pending">→ 결제 예정</option>
+              <option value="paid">→ 결제 완료</option>
+              <option value="cancelled">→ 무산/취소</option>
+              <option value="failed">→ 결제 실패</option>
+            </select>
+            <select id="bulk-category-select" class="btn">
+              <option value="">카테고리 일괄 지정...</option>
+              <option>출판</option><option>게임</option><option>만화/웹툰</option>
+              <option>음악</option><option>패션/잡화</option><option>디자인</option>
+              <option>아트</option><option>테크</option><option>푸드</option>
+              <option>영화/영상</option><option>기타</option>
+              <option value="__clear__">(카테고리 지우기)</option>
+            </select>
+            <button class="btn btn-danger" id="btn-bulk-delete">🗑 삭제</button>
+            <button class="btn" id="btn-select-cancel">취소</button>
           </div>
         </div>
         <div class="projects" id="projects-list"></div>
@@ -370,6 +469,11 @@
           </label>
           <div class="checkbox-row">
             <label class="checkbox"><input type="checkbox" name="downloaded" /><span>다운로드 / 수령 완료</span></label>
+            <label style="flex-direction: row; align-items: center; gap: 10px; margin-top: 10px;">
+              <span style="min-width: 80px;">완료일</span>
+              <input type="date" name="downloadedAt" style="flex: 1;" />
+              <button type="button" class="btn" id="btn-today" style="padding: 6px 10px; font-size: 12px;">오늘</button>
+            </label>
           </div>
           <label><span>프로젝트 URL</span><input type="url" name="url" placeholder="https://tumblbug.com/..." /></label>
           <label><span>메모</span><textarea name="notes" rows="3"></textarea></label>
@@ -597,6 +701,8 @@
   let state = {
     projects: [], view: 'list', search: '', filterStatus: 'all',
     sortBy: 'date-asc', editingId: null, parsedCandidates: [],
+    selectMode: false,
+    selectedIds: new Set(),
   };
 
   // ================= 렌더링 =================
@@ -629,14 +735,27 @@
     const dateLabel = p.status === 'pending' ? '결제 예정' : p.status === 'paid' ? '결제일' : '날짜';
     const dateText = p.paymentDate ? fd(p.paymentDate) : '-';
     const ddayText = p.status === 'pending' && p.paymentDate ? ddayLabel(p.paymentDate) : '';
+    const selected = state.selectedIds.has(p.id);
+    
+    // 수령 대기가 오래된 항목 감지 (결제 완료 + 미수령 + 결제일로부터 30일 이상 지남)
+    const stale = (() => {
+      if (p.status !== 'paid' || p.downloaded) return false;
+      if (!p.paymentDate) return false;
+      const daysAgo = -daysUntil(p.paymentDate);
+      return daysAgo >= 30;
+    })();
+    
     return `
-      <article class="project" data-id="${esc(p.id)}">
+      <article class="project ${selected ? 'selected' : ''}" data-id="${esc(p.id)}">
+        <div class="select-box ${selected ? 'checked' : ''}"></div>
         <div class="check ${p.downloaded ? 'done' : ''}" title="수령 완료 표시"></div>
         <div class="info">
-          <div class="title">${esc(p.title || '(제목 없음)')}</div>
+          <div class="title">${esc(p.title || '(제목 없음)')}${stale ? '<span class="stale-badge">수령 대기 30일+</span>' : ''}</div>
           <div class="meta">
             ${p.creator ? `<span>by ${esc(p.creator)}</span>` : ''}
             ${p.category ? `<span class="category-tag">${esc(p.category)}</span>` : ''}
+            ${p.downloaded && p.downloadedAt ? `<span class="downloaded-at">✓ ${fd(p.downloadedAt)} 완료</span>` : ''}
+            ${!p.downloaded && p.status === 'paid' ? `<button class="quick-done-btn" data-action="quick-done">오늘 완료</button>` : ''}
             ${p.notes ? `<span title="${esc(p.notes)}">📝 메모</span>` : ''}
           </div>
         </div>
@@ -655,11 +774,20 @@
   function bindCardEvents(container) {
     container.querySelectorAll('.project').forEach(el => {
       const id = el.dataset.id;
-      el.querySelector('.check').addEventListener('click', e => { e.stopPropagation(); onToggleDownloaded(id); });
-      el.querySelector('.edit-btn').addEventListener('click', e => { e.stopPropagation(); openEditModal(id); });
+      const selectBox = el.querySelector('.select-box');
+      if (selectBox) selectBox.addEventListener('click', e => { e.stopPropagation(); toggleSelection(id); });
+      const check = el.querySelector('.check');
+      if (check) check.addEventListener('click', e => { e.stopPropagation(); onToggleDownloaded(id); });
+      const editBtn = el.querySelector('.edit-btn');
+      if (editBtn) editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(id); });
+      const quickDone = el.querySelector('[data-action="quick-done"]');
+      if (quickDone) quickDone.addEventListener('click', e => { e.stopPropagation(); onQuickDone(id); });
       const link = el.querySelector('.link-btn');
       if (link) link.addEventListener('click', e => e.stopPropagation());
-      el.addEventListener('click', () => openEditModal(id));
+      el.addEventListener('click', () => {
+        if (state.selectMode) toggleSelection(id);
+        else openEditModal(id);
+      });
     });
   }
   function renderList() {
@@ -752,10 +880,50 @@
   async function onToggleDownloaded(id) {
     const p = state.projects.find(x => x.id === id);
     if (!p) return;
+    const wasDownloaded = p.downloaded;
     p.downloaded = !p.downloaded;
+    // 낙관적 업데이트: 체크하면 오늘 날짜, 해제하면 비움
+    if (p.downloaded && !p.downloadedAt) {
+      const now = new Date();
+      p.downloadedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    } else if (!p.downloaded) {
+      p.downloadedAt = '';
+    }
     renderAll();
-    try { await apiCall('POST', { action: 'toggleDownloaded', id }); }
-    catch (e) { p.downloaded = !p.downloaded; renderAll(); toast('동기화 실패'); }
+    try {
+      const result = await apiCall('POST', { action: 'toggleDownloaded', id });
+      // 서버 응답으로 싱크
+      p.downloaded = result.downloaded;
+      p.downloadedAt = result.downloadedAt || '';
+      renderAll();
+    } catch (e) {
+      p.downloaded = wasDownloaded;
+      if (!wasDownloaded) p.downloadedAt = '';
+      renderAll();
+      toast('동기화 실패');
+    }
+  }
+  
+  async function onQuickDone(id) {
+    // 수령 완료 + 오늘 날짜 한 번에
+    const p = state.projects.find(x => x.id === id);
+    if (!p) return;
+    const today = (() => {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    })();
+    p.downloaded = true;
+    p.downloadedAt = today;
+    renderAll();
+    try {
+      await apiCall('POST', { action: 'update', project: { id, downloaded: true, downloadedAt: today } });
+      toast('오늘 완료로 기록했어요');
+    } catch (e) {
+      p.downloaded = false;
+      p.downloadedAt = '';
+      renderAll();
+      toast('저장 실패');
+    }
   }
   function openEditModal(id = null) {
     state.editingId = id;
@@ -777,6 +945,7 @@
       form.deliveryDate.value = p.deliveryDate || '';
       form.status.value = p.status || 'pending';
       form.downloaded.checked = !!p.downloaded;
+      form.downloadedAt.value = p.downloadedAt || '';
       form.url.value = p.url || '';
       form.notes.value = p.notes || '';
     } else {
@@ -799,6 +968,7 @@
       deliveryDate: form.deliveryDate.value,
       status: form.status.value,
       downloaded: form.downloaded.checked,
+      downloadedAt: form.downloaded.checked ? (form.downloadedAt.value || '') : '',
       url: form.url.value.trim(),
       notes: form.notes.value.trim(),
     };
@@ -881,6 +1051,111 @@
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + v).classList.add('active');
   }
+  
+  // ================= 선택 모드 / 일괄 작업 =================
+  function enterSelectMode() {
+    state.selectMode = true;
+    state.selectedIds = new Set();
+    document.body.classList.add('select-mode');
+    document.getElementById('bulk-bar').classList.add('active');
+    document.getElementById('btn-select-mode').textContent = '✕ 선택 종료';
+    updateBulkBar();
+    renderList();
+  }
+  function exitSelectMode() {
+    state.selectMode = false;
+    state.selectedIds = new Set();
+    document.body.classList.remove('select-mode');
+    document.getElementById('bulk-bar').classList.remove('active');
+    document.getElementById('btn-select-mode').textContent = '☐ 선택';
+    document.getElementById('select-all').checked = false;
+    renderList();
+  }
+  function toggleSelection(id) {
+    if (state.selectedIds.has(id)) state.selectedIds.delete(id);
+    else state.selectedIds.add(id);
+    updateBulkBar();
+    renderList();
+  }
+  function updateBulkBar() {
+    document.getElementById('selected-n').textContent = state.selectedIds.size;
+    // 전체 선택 체크박스는 현재 보이는 목록 기준
+    const visible = getFiltered();
+    const allSelected = visible.length > 0 && visible.every(p => state.selectedIds.has(p.id));
+    document.getElementById('select-all').checked = allSelected;
+  }
+  function selectAllVisible(checked) {
+    const visible = getFiltered();
+    if (checked) visible.forEach(p => state.selectedIds.add(p.id));
+    else visible.forEach(p => state.selectedIds.delete(p.id));
+    updateBulkBar();
+    renderList();
+  }
+  
+  async function bulkDelete() {
+    const ids = [...state.selectedIds];
+    if (ids.length === 0) return;
+    if (!confirm(`선택한 ${ids.length}개의 후원 기록을 삭제할까요?\n되돌릴 수 없어요.`)) return;
+    try {
+      await apiCall('POST', { action: 'deleteMany', ids });
+      state.projects = state.projects.filter(p => !state.selectedIds.has(p.id));
+      exitSelectMode();
+      renderAll();
+      toast(`${ids.length}건 삭제했어요`);
+    } catch (e) { toast('삭제 실패: ' + e.message); }
+  }
+  
+  async function bulkUpdate(changes, confirmMsg) {
+    const ids = [...state.selectedIds];
+    if (ids.length === 0) return;
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    try {
+      await apiCall('POST', { action: 'updateMany', ids, changes });
+      // 로컬 상태 갱신
+      const today = (() => {
+        const n = new Date();
+        return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+      })();
+      state.projects.forEach(p => {
+        if (state.selectedIds.has(p.id)) {
+          Object.assign(p, changes);
+          if (changes.downloaded === true && !p.downloadedAt) p.downloadedAt = today;
+          if (changes.downloaded === false) p.downloadedAt = '';
+        }
+      });
+      exitSelectMode();
+      renderAll();
+      toast(`${ids.length}건 업데이트했어요`);
+    } catch (e) { toast('업데이트 실패: ' + e.message); }
+  }
+  
+  // ================= CSV 내보내기 =================
+  function exportCsv() {
+    const list = getFiltered();
+    if (list.length === 0) { toast('내보낼 항목이 없어요'); return; }
+    const headers = ['제목', '창작자', '금액', '카테고리', '상태', '후원일', '전달/결제일', '수령완료', '수령일', '메모', 'URL'];
+    const rows = list.map(p => [
+      p.title, p.creator, p.amount, p.category,
+      sl(p.status), p.paymentDate, p.deliveryDate,
+      p.downloaded ? 'Y' : 'N', p.downloadedAt || '',
+      p.notes, p.url,
+    ]);
+    const csv = [headers, ...rows].map(row =>
+      row.map(cell => {
+        const s = String(cell ?? '');
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(',')
+    ).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    a.href = url;
+    a.download = `tumblbug-tracker-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    toast(`${list.length}건 내보내기 완료`);
+  }
 
   // ================= 초기화 =================
   function showSetup() {
@@ -917,15 +1192,80 @@
   document.getElementById('btn-paste').addEventListener('click', openPasteModal);
   document.getElementById('btn-manual').addEventListener('click', () => openEditModal());
   document.getElementById('btn-reload').addEventListener('click', loadProjects);
-  document.getElementById('search-input').addEventListener('input', e => { state.search = e.target.value; renderList(); });
-  document.getElementById('filter-status').addEventListener('change', e => { state.filterStatus = e.target.value; renderList(); });
+  document.getElementById('search-input').addEventListener('input', e => { state.search = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
+  document.getElementById('filter-status').addEventListener('change', e => { state.filterStatus = e.target.value; renderList(); if (state.selectMode) updateBulkBar(); });
   document.getElementById('sort-by').addEventListener('change', e => { state.sortBy = e.target.value; renderList(); });
   document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => { el.closest('.modal').classList.remove('open'); state.editingId = null; }));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open')); });
   document.getElementById('btn-save').addEventListener('click', saveFromForm);
   document.getElementById('btn-delete').addEventListener('click', onDelete);
   document.getElementById('btn-parse').addEventListener('click', parseAndPreview);
   document.getElementById('btn-import').addEventListener('click', importParsed);
+  document.getElementById('btn-csv').addEventListener('click', exportCsv);
+  
+  // 편집 모달 "오늘" 버튼 - 완료일에 오늘 날짜 채우기
+  document.getElementById('btn-today').addEventListener('click', () => {
+    const form = document.getElementById('edit-form');
+    const n = new Date();
+    form.downloadedAt.value = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    form.downloaded.checked = true;
+  });
+  
+  // 선택 모드
+  document.getElementById('btn-select-mode').addEventListener('click', () => {
+    if (state.selectMode) exitSelectMode();
+    else enterSelectMode();
+  });
+  document.getElementById('btn-select-cancel').addEventListener('click', exitSelectMode);
+  document.getElementById('select-all').addEventListener('change', e => selectAllVisible(e.target.checked));
+  document.getElementById('btn-bulk-delete').addEventListener('click', bulkDelete);
+  document.getElementById('btn-bulk-download').addEventListener('click', () => {
+    const n = [...state.selectedIds].length;
+    if (n === 0) { toast('항목을 먼저 선택해주세요'); return; }
+    bulkUpdate({ downloaded: true }, `선택한 ${n}개를 오늘 수령 완료로 처리할까요?`);
+  });
+  document.getElementById('bulk-status-select').addEventListener('change', e => {
+    const v = e.target.value;
+    if (!v) return;
+    const n = state.selectedIds.size;
+    if (n === 0) { toast('항목을 먼저 선택해주세요'); e.target.value = ''; return; }
+    bulkUpdate({ status: v }, `선택한 ${n}개의 상태를 "${sl(v)}"로 변경할까요?`);
+    e.target.value = '';
+  });
+  document.getElementById('bulk-category-select').addEventListener('change', e => {
+    const v = e.target.value;
+    if (!v) return;
+    const n = state.selectedIds.size;
+    if (n === 0) { toast('항목을 먼저 선택해주세요'); e.target.value = ''; return; }
+    const cat = v === '__clear__' ? '' : v;
+    const label = cat || '(카테고리 없음)';
+    bulkUpdate({ category: cat }, `선택한 ${n}개의 카테고리를 "${label}"로 변경할까요?`);
+    e.target.value = '';
+  });
+  
+  // 키보드 단축키
+  document.addEventListener('keydown', e => {
+    // 모달 닫기
+    if (e.key === 'Escape') {
+      const openModal = document.querySelector('.modal.open');
+      if (openModal) { openModal.classList.remove('open'); state.editingId = null; return; }
+      if (state.selectMode) { exitSelectMode(); return; }
+    }
+    // 입력 중이면 단축키 무시
+    const t = e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    
+    if (e.key === 'n' || e.key === 'N') {
+      e.preventDefault();
+      openEditModal();
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search-input').focus();
+    } else if (e.key === 's' || e.key === 'S') {
+      e.preventDefault();
+      document.getElementById('btn-select-mode').click();
+    }
+  });
 
   // 시작
   if (getApiUrl()) {
