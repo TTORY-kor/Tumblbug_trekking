@@ -539,18 +539,21 @@
       color: var(--accent);
     }
 
-    /* 메모 인라인 편집 */
+    /* 메모 인라인 편집 - 메타 줄 안에 span으로 들어감 */
     .project .notes-inline {
-      margin-top: 4px;
-      padding: 4px 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
       font-size: 11px;
-      line-height: 1.5;
+      line-height: 1.4;
       color: var(--text-muted);
       border-radius: 4px;
       cursor: text;
       transition: background .12s;
-      max-width: 100%;
-      word-break: break-word;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .project .notes-inline:hover {
       background: var(--surface-2);
@@ -561,7 +564,7 @@
       opacity: 0;
     }
     .project:hover .notes-inline.empty {
-      opacity: 1;
+      opacity: 0.7;
     }
     .project .notes-inline.has-notes {
       background: var(--surface-2);
@@ -571,12 +574,16 @@
     }
     .project .notes-inline.notes-editing {
       padding: 0;
+      max-width: 320px;
+      overflow: visible;
+      white-space: normal;
     }
     .project .notes-input {
       width: 100%;
+      min-width: 200px;
       font: inherit;
       font-size: 11px;
-      padding: 6px 8px;
+      padding: 4px 8px;
       border: 1px solid var(--accent);
       border-radius: 4px;
       background: var(--surface);
@@ -586,8 +593,13 @@
       font-family: var(--font);
     }
     .project .notes-input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
-    .project .notes-empty { font-size: 11px; }
-    .project .notes-content { font-size: 11px; }
+    .project .notes-empty { font-size: 11px; white-space: nowrap; }
+    .project .notes-content {
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     /* 카테고리 피커 항목 행 - 편집/삭제 버튼 수용 */
     .picker-item-wrap {
@@ -2640,9 +2652,9 @@ function checkSheetStatus() {
               })()}
             </span>
             ${p.downloaded && p.downloadedAt ? `<span class="downloaded-at">✓ ${fd(p.downloadedAt)}</span>` : ''}
-          </div>
-          <div class="notes-inline ${p.notes ? 'has-notes' : 'empty'}" data-action="notes-edit" title="클릭해서 메모 수정">
-            ${p.notes ? `<span class="notes-content">📝 ${esc(p.notes)}</span>` : '<span class="notes-empty">+ 메모 추가</span>'}
+            <span class="notes-inline ${p.notes ? 'has-notes' : 'empty'}" data-action="notes-edit" title="클릭해서 메모 수정">
+              ${p.notes ? `<span class="notes-content">📝 ${esc(p.notes)}</span>` : '<span class="notes-empty">+ 메모</span>'}
+            </span>
           </div>
         </div>
         <div class="status-cell">
@@ -3032,36 +3044,26 @@ function checkSheetStatus() {
     if (!p) return;
     
     // 이미 편집 중인 곳이 있으면 취소
-    const existingEditor = document.querySelector('.notes-editing');
-    if (existingEditor) existingEditor.querySelector('textarea').blur();
+    const existingEditor = document.querySelector('.notes-editing input');
+    if (existingEditor) existingEditor.blur();
     
     const original = p.notes || '';
     anchorEl.classList.add('notes-editing');
-    anchorEl.innerHTML = `<textarea class="notes-input" rows="1" placeholder="메모 입력 (Enter로 저장, Esc로 취소)">${esc(original)}</textarea>`;
-    const textarea = anchorEl.querySelector('textarea');
-    textarea.focus();
-    // 텍스트 끝으로 커서 이동
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    // 높이 자동 조절
-    const autoResize = () => {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    };
-    autoResize();
-    textarea.addEventListener('input', autoResize);
+    anchorEl.innerHTML = `<input type="text" class="notes-input" placeholder="메모 (Enter로 저장, Esc로 취소)" value="${esc(original).replace(/"/g, '&quot;')}" />`;
+    const input = anchorEl.querySelector('input');
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
     
     let saved = false;
     const save = async () => {
       if (saved) return;
       saved = true;
-      const newValue = textarea.value.trim();
+      const newValue = input.value.trim();
       anchorEl.classList.remove('notes-editing');
       if (newValue === original) {
-        // 변경 없으면 그냥 다시 그리기
         renderList();
         return;
       }
-      // 낙관적 업데이트
       p.notes = newValue;
       renderAll();
       try {
@@ -3079,8 +3081,8 @@ function checkSheetStatus() {
       renderList();
     };
     
-    textarea.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
         e.preventDefault();
         save();
       } else if (e.key === 'Escape') {
@@ -3088,8 +3090,8 @@ function checkSheetStatus() {
         cancel();
       }
     });
-    textarea.addEventListener('blur', save);
-    textarea.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('blur', save);
+    input.addEventListener('click', e => e.stopPropagation());
   }
   function openEditModal(id = null) {
     state.editingId = id;
