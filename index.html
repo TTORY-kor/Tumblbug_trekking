@@ -3043,55 +3043,74 @@ function checkSheetStatus() {
     const p = state.projects.find(x => x.id === projectId);
     if (!p) return;
     
-    // 이미 편집 중인 곳이 있으면 취소
+    // 이미 편집 중인 곳이 있으면 강제 마무리
     const existingEditor = document.querySelector('.notes-editing input');
-    if (existingEditor) existingEditor.blur();
+    if (existingEditor && existingEditor !== anchorEl.querySelector('input')) {
+      existingEditor.dataset.skipSave = '1';
+      existingEditor.blur();
+    }
     
     const original = p.notes || '';
     anchorEl.classList.add('notes-editing');
-    anchorEl.innerHTML = `<input type="text" class="notes-input" placeholder="메모 (Enter로 저장, Esc로 취소)" value="${esc(original).replace(/"/g, '&quot;')}" />`;
+    anchorEl.innerHTML = `<input type="text" class="notes-input" placeholder="메모 (Enter 저장, Esc 취소)" />`;
     const input = anchorEl.querySelector('input');
+    // value를 JS로 직접 설정 (HTML escape 문제 회피)
+    input.value = original;
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
     
-    let saved = false;
-    const save = async () => {
-      if (saved) return;
-      saved = true;
+    let finalized = false;
+    
+    const finalize = async (shouldSave) => {
+      if (finalized) return;
+      finalized = true;
       const newValue = input.value.trim();
+      const valueChanged = (newValue !== original);
+      
+      // DOM 클래스 제거를 먼저 (다음 클릭 시 재진입 방지)
       anchorEl.classList.remove('notes-editing');
-      if (newValue === original) {
+      
+      if (!shouldSave || !valueChanged) {
+        // 저장 안 하거나 변경 없으면 그냥 리렌더
         renderList();
         return;
       }
+      
+      // 낙관적 업데이트
       p.notes = newValue;
-      renderAll();
+      renderList();
+      
       try {
         await apiCall('POST', { action: 'update', project: { id: projectId, notes: newValue } });
       } catch (e) {
         p.notes = original;
-        renderAll();
-        toast('메모 저장 실패');
+        renderList();
+        toast('메모 저장 실패: ' + e.message);
       }
-    };
-    const cancel = () => {
-      if (saved) return;
-      saved = true;
-      anchorEl.classList.remove('notes-editing');
-      renderList();
     };
     
     input.addEventListener('keydown', e => {
+      e.stopPropagation();  // 전역 키 단축키로 전파 막기
       if (e.key === 'Enter') {
         e.preventDefault();
-        save();
+        finalize(true);
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        cancel();
+        finalize(false);
       }
     });
-    input.addEventListener('blur', save);
+    
+    input.addEventListener('blur', () => {
+      // skipSave 플래그가 있으면 저장 스킵
+      if (input.dataset.skipSave === '1') {
+        finalize(false);
+      } else {
+        finalize(true);
+      }
+    });
+    
     input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
   }
   function openEditModal(id = null) {
     state.editingId = id;
