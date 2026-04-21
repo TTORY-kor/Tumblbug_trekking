@@ -40,7 +40,7 @@
       --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
     }
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme]) {
         --bg: #0a0a0b;
         --surface: #141416;
         --surface-2: #1c1c1f;
@@ -62,6 +62,29 @@
         --shadow-lg: 0 20px 40px rgba(0,0,0,.5);
       }
     }
+    /* 수동 다크모드 강제 적용 */
+    :root[data-theme="dark"] {
+      --bg: #0a0a0b;
+      --surface: #141416;
+      --surface-2: #1c1c1f;
+      --surface-3: #2a2a2e;
+      --border: #27272a;
+      --border-strong: #3f3f46;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-subtle: #71717a;
+      --accent: #818cf8;
+      --accent-hover: #a5b4fc;
+      --accent-soft: rgba(129,140,248,.12);
+      --ok-soft: rgba(16,185,129,.12);
+      --warn-soft: rgba(245,158,11,.12);
+      --danger-soft: rgba(239,68,68,.12);
+      --info-soft: rgba(14,165,233,.12);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+      --shadow-lg: 0 20px 40px rgba(0,0,0,.5);
+    }
+    /* 수동 라이트모드 강제 (다크모드 OS에서도 라이트로) - 기본값이 라이트라 override 불필요 */
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -263,8 +286,9 @@
       border-bottom: 1px solid var(--border);
     }
     @media (prefers-color-scheme: dark) {
-      .header { background: rgba(10,10,11,.85); }
+      :root:not([data-theme]) .header { background: rgba(10,10,11,.85); }
     }
+    :root[data-theme="dark"] .header { background: rgba(10,10,11,.85); }
     .header-inner {
       max-width: 1080px; margin: 0 auto;
       padding: 14px 24px;
@@ -501,25 +525,113 @@
     .project .edit-btn-inline:hover { background: var(--accent-soft); color: var(--accent); opacity: 1; }
     .project .link-btn-inline {
       background: transparent; border: none; cursor: pointer;
-      width: 24px; height: 24px;
       display: grid; place-items: center;
-      color: var(--text-subtle);
+      width: 24px; height: 24px;
+      color: var(--text-muted);
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 12px;
       text-decoration: none;
+      transition: all .12s;
+      flex-shrink: 0;
+    }
+    .project .link-btn-inline:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* 메모 인라인 편집 */
+    .project .notes-inline {
+      margin-top: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: text;
+      transition: background .12s;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .project .notes-inline:hover {
+      background: var(--surface-2);
+    }
+    .project .notes-inline.empty {
+      color: var(--text-subtle);
+      font-style: italic;
+      opacity: 0;
+    }
+    .project:hover .notes-inline.empty {
+      opacity: 1;
+    }
+    .project .notes-inline.has-notes {
+      background: var(--surface-2);
+    }
+    .project .notes-inline.has-notes:hover {
+      background: var(--surface-3);
+    }
+    .project .notes-inline.notes-editing {
+      padding: 0;
+    }
+    .project .notes-input {
+      width: 100%;
+      font: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      resize: none;
+      line-height: 1.5;
+      font-family: var(--font);
+    }
+    .project .notes-input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
+    .project .notes-empty { font-size: 11px; }
+    .project .notes-content { font-size: 11px; }
+
+    /* 카테고리 피커 항목 행 - 편집/삭제 버튼 수용 */
+    .picker-item-wrap {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .picker-item-wrap .picker-item {
+      flex: 1;
+    }
+    .picker-action-btn {
+      width: 26px; height: 26px;
+      display: grid; place-items: center;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-subtle);
       opacity: 0;
       transition: all .12s;
       flex-shrink: 0;
     }
-    .project:hover .link-btn-inline { opacity: 1; }
-    .project .link-btn-inline:hover { background: var(--surface-3); color: var(--text); opacity: 1; }
+    .picker-item-wrap:hover .picker-action-btn { opacity: 1; }
+    .picker-action-btn:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      opacity: 1;
+    }
+    .picker-action-btn.danger:hover {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
 
     .project .meta {
       font-size: 11px; color: var(--text-muted);
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     }
     .project .meta > * { white-space: nowrap; }
-    .project .category-tag-wrap { display: inline-flex; }
+    .project .category-tag-wrap {
+      display: inline-flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
     .project .category-tag {
       display: inline-block;
       padding: 1px 7px;
@@ -552,21 +664,44 @@
       border: 1px solid var(--border-strong);
       border-radius: var(--radius);
       box-shadow: var(--shadow-lg);
-      min-width: 180px;
-      max-height: 320px;
+      min-width: 240px;
+      max-height: 400px;
       display: flex; flex-direction: column;
       animation: rise .15s;
       overflow: hidden;
     }
+    .picker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+    }
+    .picker-clear-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 11px;
+      text-decoration: underline;
+      padding: 0;
+    }
+    .picker-clear-btn:hover { color: var(--danger); }
     .picker-list {
-      max-height: 240px;
+      max-height: 280px;
       overflow-y: auto;
       padding: 4px;
     }
     .picker-item {
-      display: block; width: 100%;
+      display: flex; align-items: center; gap: 8px;
+      width: 100%;
       text-align: left;
-      padding: 7px 10px;
+      padding: 6px 10px;
       font: inherit; font-size: 13px;
       color: var(--text);
       background: transparent;
@@ -577,6 +712,12 @@
     }
     .picker-item:hover { background: var(--surface-2); }
     .picker-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+    .picker-item input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
     .picker-add {
       display: flex; gap: 4px;
       padding: 8px;
@@ -901,6 +1042,59 @@
     }
 
     /* Toast */
+    /* 다크모드 토글 버튼 (왼쪽 하단 구석, 흐릿) */
+    .theme-toggle {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      width: 36px; height: 36px;
+      display: grid;
+      place-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+      z-index: 40;
+      opacity: 0.35;
+      transition: all .2s;
+    }
+    .theme-toggle:hover {
+      opacity: 1;
+      transform: scale(1.1);
+      box-shadow: var(--shadow-md);
+      color: var(--accent);
+      border-color: var(--border-strong);
+    }
+    .theme-toggle .theme-icon {
+      line-height: 1;
+      font-size: 0;
+      transition: transform .3s;
+    }
+    .theme-toggle:hover .theme-icon { transform: rotate(180deg); }
+    .theme-toggle .theme-icon::before {
+      font-size: 16px;
+    }
+    /* OS 시스템 다크모드 시 달 아이콘 (수동 설정이 없을 때) */
+    :root:not([data-theme]) .theme-toggle .theme-icon::before { content: '☀'; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) .theme-toggle .theme-icon::before { content: '☾'; }
+    }
+    /* 수동 오버라이드 */
+    :root[data-theme="light"] .theme-toggle .theme-icon::before { content: '☀'; }
+    :root[data-theme="dark"] .theme-toggle .theme-icon::before { content: '☾'; }
+    
+    /* 모바일에서 약간 더 크게 */
+    @media (max-width: 720px) {
+      .theme-toggle {
+        bottom: 12px;
+        left: 12px;
+        width: 40px; height: 40px;
+      }
+    }
+
     .toast {
       position: fixed; bottom: 20px; left: 50%;
       transform: translateX(-50%);
@@ -1986,8 +2180,8 @@ function checkSheetStatus() {
           <label><span>창작자</span><input type="text" name="creator" /></label>
           <div class="form-row">
             <label><span>후원 금액 (원) <em>*</em></span><input type="number" name="amount" min="0" step="1000" required /></label>
-            <label><span>카테고리</span>
-              <select name="category" id="edit-category-select"></select>
+            <label><span>카테고리 <em style="font-style:normal; color: var(--text-subtle); font-weight: 400;">(쉼표로 구분, 카드에서 더 쉽게 편집 가능)</em></span>
+              <input type="text" name="category" id="edit-category-input" placeholder="예: 만화/웹툰, 아트북" />
             </label>
           </div>
           <div class="form-row">
@@ -2300,7 +2494,10 @@ function checkSheetStatus() {
   
   function getAllCategories() {
     // 기본 + 시트의 커스텀 + 시트의 projects에서 사용 중인 것들 (중복 제거)
-    const used = [...new Set(state.projects.map(p => p.category).filter(Boolean))];
+    const used = new Set();
+    state.projects.forEach(p => {
+      catsToArray(p.category).forEach(c => used.add(c));
+    });
     const all = [...new Set([...DEFAULT_CATEGORIES, ...customCategoriesCache, ...used])];
     return all;
   }
@@ -2324,6 +2521,15 @@ function checkSheetStatus() {
       return false;
     }
   }
+  
+  // 카테고리 문자열 ↔ 배열 변환 (쉼표로 구분)
+  function catsToArray(category) {
+    if (!category) return [];
+    return String(category).split(',').map(s => s.trim()).filter(Boolean);
+  }
+  function catsToString(arr) {
+    return (arr || []).map(s => String(s).trim()).filter(Boolean).join(', ');
+  }
 
   // ================= 상태 =================
   let state = {
@@ -2344,11 +2550,10 @@ function checkSheetStatus() {
     if (!sel) return;
     const currentValue = state.filterCategory;
     const cats = getAllCategories();
-    const hasNoCategory = state.projects.some(p => !p.category);
+    const hasNoCategory = state.projects.some(p => !p.category || catsToArray(p.category).length === 0);
     sel.innerHTML = '<option value="all">전체 카테고리</option>' +
       (hasNoCategory ? '<option value="__none__">(카테고리 없음)</option>' : '') +
       cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    // 현재 선택 값이 목록에 없으면 'all'로 리셋
     if ([...sel.options].some(o => o.value === currentValue)) {
       sel.value = currentValue;
     } else {
@@ -2371,8 +2576,11 @@ function checkSheetStatus() {
     if (state.filterReceived === 'received') arr = arr.filter(p => p.downloaded);
     else if (state.filterReceived === 'not-received') arr = arr.filter(p => !p.downloaded);
     if (state.filterCategory !== 'all') {
-      if (state.filterCategory === '__none__') arr = arr.filter(p => !p.category);
-      else arr = arr.filter(p => p.category === state.filterCategory);
+      if (state.filterCategory === '__none__') {
+        arr = arr.filter(p => !p.category || catsToArray(p.category).length === 0);
+      } else {
+        arr = arr.filter(p => catsToArray(p.category).includes(state.filterCategory));
+      }
     }
     const sorters = {
       'recent': (a, b) => {
@@ -2411,16 +2619,25 @@ function checkSheetStatus() {
         <div class="info">
           <div class="title-row">
             <span class="title">${esc(p.title || '(제목 없음)')}</span>
+            ${p.url ? `<a class="link-btn-inline" href="${esc(p.url)}" target="_blank" rel="noopener" title="프로젝트 페이지 열기">🔗</a>` : ''}
             <button class="edit-btn-inline" title="편집">✎</button>
           </div>
           ${p.reward ? `<div class="reward-line">🎁 ${esc(p.reward)}</div>` : ''}
           <div class="meta">
             ${p.creator ? `<span>by ${esc(p.creator)}</span>` : ''}
             <span class="category-tag-wrap" data-id="${esc(p.id)}">
-              <button class="category-tag ${p.category ? '' : 'empty'}" data-action="category-edit">${p.category ? esc(p.category) : '+ 카테고리'}</button>
+              ${(() => {
+                const cats = catsToArray(p.category);
+                if (cats.length === 0) {
+                  return '<button class="category-tag empty" data-action="category-edit">+ 카테고리</button>';
+                }
+                return cats.map(c => `<button class="category-tag" data-action="category-edit">${esc(c)}</button>`).join('');
+              })()}
             </span>
             ${p.downloaded && p.downloadedAt ? `<span class="downloaded-at">✓ ${fd(p.downloadedAt)}</span>` : ''}
-            ${p.notes ? `<span title="${esc(p.notes)}">📝</span>` : ''}
+          </div>
+          <div class="notes-inline ${p.notes ? 'has-notes' : 'empty'}" data-action="notes-edit" title="클릭해서 메모 수정">
+            ${p.notes ? `<span class="notes-content">📝 ${esc(p.notes)}</span>` : '<span class="notes-empty">+ 메모 추가</span>'}
           </div>
         </div>
         <div class="status-cell">
@@ -2444,12 +2661,18 @@ function checkSheetStatus() {
       if (check) check.addEventListener('click', e => { e.stopPropagation(); onToggleDownloaded(id); });
       const editBtn = el.querySelector('.edit-btn-inline');
       if (editBtn) editBtn.addEventListener('click', e => { e.stopPropagation(); openEditModal(id); });
-      const categoryBtn = el.querySelector('[data-action="category-edit"]');
-      if (categoryBtn) categoryBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        openCategoryPicker(id, categoryBtn);
+      el.querySelectorAll('[data-action="category-edit"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          openCategoryPicker(id, btn);
+        });
       });
-      const link = el.querySelector('.project-link-btn');
+      const notesEl = el.querySelector('[data-action="notes-edit"]');
+      if (notesEl) notesEl.addEventListener('click', e => {
+        e.stopPropagation();
+        startNoteEdit(id, notesEl);
+      });
+      const link = el.querySelector('.link-btn-inline');
       if (link) link.addEventListener('click', e => e.stopPropagation());
       el.addEventListener('click', () => {
         if (state.selectMode) toggleSelection(id);
@@ -2604,43 +2827,105 @@ function checkSheetStatus() {
     closeCategoryPicker();
     const p = state.projects.find(x => x.id === projectId);
     if (!p) return;
-    const current = p.category || '';
+    const currentSet = new Set(catsToArray(p.category));
     const allCats = getAllCategories();
     
     const picker = document.createElement('div');
     picker.id = 'category-picker';
     picker.className = 'category-picker';
     
-    // 위치 계산 (anchor 아래)
     const rect = anchorEl.getBoundingClientRect();
     picker.style.left = rect.left + 'px';
     picker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
     
+    const isCustom = (name) => customCategoriesCache.includes(name);
+    
     picker.innerHTML = `
+      <div class="picker-header">
+        <span>카테고리 (여러 개 선택 가능)</span>
+        ${currentSet.size > 0 ? '<button class="picker-clear-btn" data-action="clear">모두 해제</button>' : ''}
+      </div>
       <div class="picker-list">
-        <button class="picker-item ${!current ? 'active' : ''}" data-cat="">
-          <span style="color: var(--text-subtle);">(카테고리 없음)</span>
-        </button>
         ${allCats.map(c => `
-          <button class="picker-item ${c === current ? 'active' : ''}" data-cat="${esc(c)}">
-            ${esc(c)}${c === current ? ' ✓' : ''}
-          </button>
+          <div class="picker-item-wrap">
+            <label class="picker-item ${currentSet.has(c) ? 'active' : ''}">
+              <input type="checkbox" data-cat="${esc(c)}" ${currentSet.has(c) ? 'checked' : ''} />
+              <span>${esc(c)}</span>
+            </label>
+            ${isCustom(c) ? `
+              <button class="picker-action-btn" data-rename="${esc(c)}" title="이름 수정">✎</button>
+              <button class="picker-action-btn danger" data-delete="${esc(c)}" title="삭제">🗑</button>
+            ` : ''}
+          </div>
         `).join('')}
       </div>
       <div class="picker-add">
-        <input type="text" id="new-cat-input" placeholder="새 카테고리 추가..." maxlength="20" />
+        <input type="text" id="new-cat-input" placeholder="새 카테고리 추가..." maxlength="30" />
         <button class="btn btn-primary" id="new-cat-btn">+ 추가</button>
       </div>
     `;
     document.body.appendChild(picker);
     
-    // 클릭 이벤트
-    picker.querySelectorAll('.picker-item').forEach(btn => {
+    // 체크박스 변경 시 debounce 저장
+    let saveTimer = null;
+    const applyChanges = async () => {
+      const checked = [...picker.querySelectorAll('input[type="checkbox"]:checked')].map(el => el.dataset.cat);
+      const newValue = catsToString(checked);
+      await updateCategory(projectId, newValue);
+    };
+    const scheduleSave = () => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(applyChanges, 400);
+    };
+    
+    picker.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        e.stopPropagation();
+        const label = cb.closest('.picker-item');
+        if (label) label.classList.toggle('active', cb.checked);
+        scheduleSave();
+      });
+    });
+    
+    // 모두 해제
+    const clearBtn = picker.querySelector('[data-action="clear"]');
+    if (clearBtn) clearBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      closeCategoryPicker();
+      await updateCategory(projectId, '');
+    });
+    
+    // 카테고리 이름 수정
+    picker.querySelectorAll('[data-rename]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const cat = btn.dataset.cat;
+        const oldName = btn.dataset.rename;
+        const newName = prompt(`"${oldName}"의 새 이름을 입력하세요:`, oldName);
+        if (!newName || newName === oldName) return;
+        const trimmed = newName.trim();
+        if (!trimmed) return;
+        if (trimmed.length > 30) { toast('30자 이내로 입력해주세요'); return; }
+        if (getAllCategories().includes(trimmed)) { toast('이미 존재하는 카테고리'); return; }
         closeCategoryPicker();
-        await updateCategory(projectId, cat);
+        await renameCategory(oldName, trimmed);
+        openCategoryPicker(projectId, anchorEl);
+      });
+    });
+    
+    // 카테고리 삭제
+    picker.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const name = btn.dataset.delete;
+        const usingCount = state.projects.filter(p => catsToArray(p.category).includes(name)).length;
+        let msg = `"${name}" 카테고리를 삭제할까요?`;
+        if (usingCount > 0) {
+          msg += `\n\n이 카테고리를 사용 중인 ${usingCount}개 프로젝트에서 제거됩니다.`;
+        }
+        if (!confirm(msg)) return;
+        closeCategoryPicker();
+        await deleteCustomCategory(name);
+        openCategoryPicker(projectId, anchorEl);
       });
     });
     
@@ -2653,8 +2938,11 @@ function checkSheetStatus() {
       const ok = await addCustomCategory(name);
       addBtn.disabled = false;
       if (ok) {
+        // 기존 선택 + 새 카테고리
+        const checked = [...picker.querySelectorAll('input[type="checkbox"]:checked')].map(el => el.dataset.cat);
+        checked.push(name);
         closeCategoryPicker();
-        await updateCategory(projectId, name);
+        await updateCategory(projectId, catsToString(checked));
       }
     };
     addBtn.addEventListener('click', e => { e.stopPropagation(); doAdd(); });
@@ -2664,11 +2952,60 @@ function checkSheetStatus() {
     });
     addInput.addEventListener('click', e => e.stopPropagation());
     
-    // 외부 클릭 시 닫기
+    // 피커 내부 클릭은 외부 닫기에서 제외
+    picker.addEventListener('click', e => e.stopPropagation());
+    
     setTimeout(() => {
       document.addEventListener('click', closeCategoryPicker, { once: true });
     }, 0);
   }
+  
+  // 커스텀 카테고리 이름 변경 - 복수 카테고리 중에서도 해당 이름만 교체
+  async function renameCategory(oldName, newName) {
+    try {
+      await apiCall('POST', { action: 'deleteCategory', name: oldName });
+      await apiCall('POST', { action: 'addCategory', name: newName });
+      customCategoriesCache = customCategoriesCache.filter(c => c !== oldName);
+      if (!customCategoriesCache.includes(newName)) customCategoriesCache.push(newName);
+      // 해당 카테고리를 포함한 프로젝트들 이름 바꾸기
+      const affected = state.projects.filter(p => catsToArray(p.category).includes(oldName));
+      if (affected.length > 0) {
+        for (const p of affected) {
+          const newCats = catsToArray(p.category).map(c => c === oldName ? newName : c);
+          const newValue = catsToString(newCats);
+          await apiCall('POST', { action: 'update', project: { id: p.id, category: newValue } });
+          p.category = newValue;
+        }
+      }
+      renderAll();
+      toast(`"${oldName}" → "${newName}"로 변경`);
+    } catch (e) {
+      toast('이름 변경 실패: ' + e.message);
+    }
+  }
+  
+  // 커스텀 카테고리 삭제 - 복수 카테고리 중에서도 해당 이름만 제거
+  async function deleteCustomCategory(name) {
+    try {
+      await apiCall('POST', { action: 'deleteCategory', name });
+      customCategoriesCache = customCategoriesCache.filter(c => c !== name);
+      // 해당 카테고리를 포함한 프로젝트들에서만 제거 (다른 카테고리는 유지)
+      const affected = state.projects.filter(p => catsToArray(p.category).includes(name));
+      if (affected.length > 0) {
+        for (const p of affected) {
+          const newCats = catsToArray(p.category).filter(c => c !== name);
+          const newValue = catsToString(newCats);
+          await apiCall('POST', { action: 'update', project: { id: p.id, category: newValue } });
+          p.category = newValue;
+        }
+      }
+      renderAll();
+      toast(`"${name}" 카테고리 삭제됨`);
+    } catch (e) {
+      toast('삭제 실패: ' + e.message);
+    }
+  }
+  
   async function updateCategory(projectId, category) {
     const p = state.projects.find(x => x.id === projectId);
     if (!p) return;
@@ -2677,25 +3014,78 @@ function checkSheetStatus() {
     renderAll();
     try {
       await apiCall('POST', { action: 'update', project: { id: projectId, category } });
-      toast(category ? `카테고리를 "${category}"로 변경` : '카테고리 제거됨');
     } catch (e) {
       p.category = prev;
       renderAll();
       toast('변경 실패');
     }
   }
-  function populateCategorySelect(selectEl, currentValue, includeClearOption = false) {
-    const cats = getAllCategories();
-    const opts = ['<option value="">(선택 없음)</option>'];
-    for (const c of cats) {
-      opts.push(`<option value="${esc(c)}"${c === currentValue ? ' selected' : ''}>${esc(c)}</option>`);
-    }
-    if (includeClearOption) {
-      opts.push('<option value="__clear__">(카테고리 지우기)</option>');
-    }
-    selectEl.innerHTML = opts.join('');
-  }
   
+  // ================= 메모 인라인 편집 =================
+  function startNoteEdit(projectId, anchorEl) {
+    const p = state.projects.find(x => x.id === projectId);
+    if (!p) return;
+    
+    // 이미 편집 중인 곳이 있으면 취소
+    const existingEditor = document.querySelector('.notes-editing');
+    if (existingEditor) existingEditor.querySelector('textarea').blur();
+    
+    const original = p.notes || '';
+    anchorEl.classList.add('notes-editing');
+    anchorEl.innerHTML = `<textarea class="notes-input" rows="1" placeholder="메모 입력 (Enter로 저장, Esc로 취소)">${esc(original)}</textarea>`;
+    const textarea = anchorEl.querySelector('textarea');
+    textarea.focus();
+    // 텍스트 끝으로 커서 이동
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    // 높이 자동 조절
+    const autoResize = () => {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    };
+    autoResize();
+    textarea.addEventListener('input', autoResize);
+    
+    let saved = false;
+    const save = async () => {
+      if (saved) return;
+      saved = true;
+      const newValue = textarea.value.trim();
+      anchorEl.classList.remove('notes-editing');
+      if (newValue === original) {
+        // 변경 없으면 그냥 다시 그리기
+        renderList();
+        return;
+      }
+      // 낙관적 업데이트
+      p.notes = newValue;
+      renderAll();
+      try {
+        await apiCall('POST', { action: 'update', project: { id: projectId, notes: newValue } });
+      } catch (e) {
+        p.notes = original;
+        renderAll();
+        toast('메모 저장 실패');
+      }
+    };
+    const cancel = () => {
+      if (saved) return;
+      saved = true;
+      anchorEl.classList.remove('notes-editing');
+      renderList();
+    };
+    
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        save();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancel();
+      }
+    });
+    textarea.addEventListener('blur', save);
+    textarea.addEventListener('click', e => e.stopPropagation());
+  }
   function openEditModal(id = null) {
     state.editingId = id;
     const modal = document.getElementById('modal-edit');
@@ -2703,8 +3093,6 @@ function checkSheetStatus() {
     form.reset();
     const title = document.getElementById('edit-title');
     const deleteBtn = document.getElementById('btn-delete');
-    // 카테고리 드롭다운 동적 구성
-    const catSelect = document.getElementById('edit-category-select');
     if (id) {
       const p = state.projects.find(x => x.id === id);
       if (!p) return;
@@ -2714,7 +3102,7 @@ function checkSheetStatus() {
       form.reward.value = p.reward || '';
       form.creator.value = p.creator || '';
       form.amount.value = p.amount || '';
-      populateCategorySelect(catSelect, p.category || '');
+      form.category.value = p.category || '';
       form.paymentDate.value = p.paymentDate || '';
       form.deliveryDate.value = p.deliveryDate || '';
       form.status.value = p.status || 'pending';
@@ -2726,7 +3114,7 @@ function checkSheetStatus() {
       title.textContent = '후원 추가';
       deleteBtn.style.display = 'none';
       form.status.value = 'pending';
-      populateCategorySelect(catSelect, '');
+      form.category.value = '';
     }
     modal.classList.add('open');
   }
@@ -2739,7 +3127,7 @@ function checkSheetStatus() {
       reward: form.reward.value.trim(),
       creator: form.creator.value.trim(),
       amount: Number(form.amount.value),
-      category: form.category.value,
+      category: catsToString(catsToArray(form.category.value)),
       paymentDate: form.paymentDate.value,
       deliveryDate: form.deliveryDate.value,
       status: form.status.value,
@@ -2939,7 +3327,54 @@ function checkSheetStatus() {
     toast(`${list.length}건 내보내기 완료`);
   }
 
-  // ================= 초기화 =================
+  // ================= 테마 토글 (라이트/다크/자동) =================
+  const THEME_KEY = 'tumblbug-theme';
+  
+  function applyTheme(theme) {
+    // theme: 'light' | 'dark' | null(auto)
+    if (theme === 'light' || theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', theme);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+  
+  function getCurrentTheme() {
+    // 'light' | 'dark' | null (auto)
+    return localStorage.getItem(THEME_KEY);
+  }
+  
+  function getEffectiveTheme() {
+    // 실제로 보이는 테마 - 수동 설정이 있으면 그것, 없으면 시스템 따라감
+    const saved = getCurrentTheme();
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  
+  function cycleTheme() {
+    // 3단계 순환: auto → light → dark → auto
+    const saved = getCurrentTheme();
+    let next;
+    if (!saved) next = 'light';
+    else if (saved === 'light') next = 'dark';
+    else next = null; // 'dark' → auto
+    
+    if (next === null) {
+      localStorage.removeItem(THEME_KEY);
+      applyTheme(null);
+      toast('테마: 시스템 설정 따라감');
+    } else {
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+      toast(next === 'light' ? '테마: 라이트 모드' : '테마: 다크 모드');
+    }
+  }
+  
+  // 페이지 로드 시 저장된 테마 적용
+  applyTheme(getCurrentTheme());
+  
+  // 토글 버튼 이벤트
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
   function showSetup() {
     document.getElementById('setup-screen').style.display = 'grid';
     document.getElementById('app').style.display = 'none';
@@ -3179,5 +3614,10 @@ function checkSheetStatus() {
     showSetup();
   }
   </script>
+
+  <!-- 다크모드 토글 -->
+  <button id="theme-toggle" class="theme-toggle" title="테마 전환 (자동/라이트/다크)" aria-label="테마 전환">
+    <span class="theme-icon">●</span>
+  </button>
 </body>
 </html>
