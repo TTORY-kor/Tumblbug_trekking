@@ -823,6 +823,29 @@
     .status-paid { background: var(--ok-soft); color: var(--ok); }
     .status-cancelled { background: var(--surface-2); color: var(--text-subtle); }
     .status-failed { background: var(--danger-soft); color: var(--danger); }
+    /* 클릭 가능한 상태 배지 (결제 예정 / 결제 완료) */
+    .status.toggleable {
+      cursor: pointer;
+      transition: all .12s;
+      user-select: none;
+    }
+    .status.toggleable:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    }
+    .status.toggleable:active {
+      transform: translateY(0);
+    }
+    /* 선택 모드에선 토글 비활성 */
+    body.select-mode .status.toggleable {
+      cursor: inherit;
+    }
+    body.select-mode .status.toggleable:hover {
+      transform: none;
+      filter: none;
+      box-shadow: none;
+    }
 
     .stale-badge {
       display: inline-block;
@@ -2658,7 +2681,9 @@ function checkSheetStatus() {
           </div>
         </div>
         <div class="status-cell">
-          <span class="status status-${p.status}">${sl(p.status)}</span>
+          <span class="status status-${p.status} ${(p.status === 'pending' || p.status === 'paid') ? 'toggleable' : ''}" 
+                data-action="toggle-status" 
+                title="${p.status === 'pending' ? '클릭하면 결제 완료로 변경' : p.status === 'paid' ? '클릭하면 결제 예정으로 되돌리기' : ''}">${sl(p.status)}</span>
         </div>
         <div class="amount">${fc(p.amount)}원</div>
         <div class="date-info ${urgent ? 'urgent' : ''}">
@@ -2689,6 +2714,14 @@ function checkSheetStatus() {
         e.stopPropagation();
         startNoteEdit(id, notesEl);
       });
+      const statusBadge = el.querySelector('[data-action="toggle-status"]');
+      if (statusBadge && statusBadge.classList.contains('toggleable')) {
+        statusBadge.addEventListener('click', e => {
+          e.stopPropagation();
+          if (state.selectMode) { toggleSelection(id); return; }
+          onToggleStatus(id);
+        });
+      }
       const link = el.querySelector('.link-btn-inline');
       if (link) link.addEventListener('click', e => e.stopPropagation());
       el.addEventListener('click', () => {
@@ -2787,31 +2820,49 @@ function checkSheetStatus() {
     }
   }
   async function onToggleDownloaded(id) {
-    const p = state.projects.find(x => x.id === id);
-    if (!p) return;
-    const wasDownloaded = p.downloaded;
-    p.downloaded = !p.downloaded;
-    // 낙관적 업데이트: 체크하면 오늘 날짜, 해제하면 비움
-    if (p.downloaded && !p.downloadedAt) {
-      const now = new Date();
-      p.downloadedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    } else if (!p.downloaded) {
-      p.downloadedAt = '';
-    }
-    renderAll();
-    try {
-      const result = await apiCall('POST', { action: 'toggleDownloaded', id });
-      // 서버 응답으로 싱크
-      p.downloaded = result.downloaded;
-      p.downloadedAt = result.downloadedAt || '';
+      const p = state.projects.find(x => x.id === id);
+      if (!p) return;
+      const wasDownloaded = p.downloaded;
+      p.downloaded = !p.downloaded;
+      // 낙관적 업데이트: 체크하면 오늘 날짜, 해제하면 비움
+      if (p.downloaded && !p.downloadedAt) {
+        const now = new Date();
+        p.downloadedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      } else if (!p.downloaded) {
+        p.downloadedAt = '';
+      }
       renderAll();
-    } catch (e) {
-      p.downloaded = wasDownloaded;
-      if (!wasDownloaded) p.downloadedAt = '';
-      renderAll();
-      toast('동기화 실패');
+      try {
+        const result = await apiCall('POST', { action: 'toggleDownloaded', id });
+        // 서버 응답으로 싱크
+        p.downloaded = result.downloaded;
+        p.downloadedAt = result.downloadedAt || '';
+        renderAll();
+      } catch (e) {
+        p.downloaded = wasDownloaded;
+        if (!wasDownloaded) p.downloadedAt = '';
+        renderAll();
+        toast('동기화 실패');
+      }
     }
-  }
+  
+    async function onToggleStatus(id) {
+      const p = state.projects.find(x => x.id === id);
+      if (!p) return;
+      if (p.status !== 'pending' && p.status !== 'paid') return;
+      const prevStatus = p.status;
+      const newStatus = p.status === 'pending' ? 'paid' : 'pending';
+      p.status = newStatus;
+      renderAll();
+      try {
+        await apiCall('POST', { action: 'update', project: { id, status: newStatus } });
+        toast(newStatus === 'paid' ? '✓ 결제 완료로 변경' : '결제 예정으로 되돌림');
+      } catch (e) {
+        p.status = prevStatus;
+        renderAll();
+        toast('변경 실패: ' + e.message);
+      }
+    }
   
   async function onQuickDone(id) {
     // 수령 완료 + 오늘 날짜 한 번에
